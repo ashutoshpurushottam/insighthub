@@ -28,6 +28,20 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: never
+    properties:
+      org:
+        quartz:
+          threadPool:
+            threadCount: 5
+          jobStore:
+            tablePrefix: QRTZ_
+            driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+            useProperties: "true"
+
   jackson:
     serialization:
       write-dates-as-timestamps: false
@@ -59,3 +73,8 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
+
+# InsightHub Configuration
+insighthub:
+  export:
+    directory: ./exports

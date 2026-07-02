@@ -27,6 +27,7 @@ public class ParameterService {
     private final ParameterRepository parameterRepository;
     private final ReportRepository reportRepository;
     private final ObjectMapper objectMapper;
+    private final ExpressionResolver expressionResolver;
 
     public List<ParameterDto> getParametersForReport(Long reportId) {
         return parameterRepository.findByReportIdOrderByPositionAsc(reportId).stream()
@@ -266,13 +267,20 @@ public class ParameterService {
     }
 
     private ParameterDto toDto(ParameterEntity entity) {
+        String rawDefault = entity.getDefaultValue();
+        String resolved = null;
+        if (rawDefault != null && !rawDefault.isBlank()) {
+            resolved = expressionResolver.resolve(rawDefault);
+        }
+
         return ParameterDto.builder()
             .id(entity.getId())
             .reportId(entity.getReport().getId())
             .name(entity.getName())
             .label(entity.getLabel())
             .type(entity.getParamType())
-            .defaultValue(entity.getDefaultValue())
+            .defaultValue(rawDefault)
+            .resolvedDefaultValue(resolved)
             .placeholder(entity.getPlaceholder())
             .required(entity.isRequired())
             .position(entity.getPosition())

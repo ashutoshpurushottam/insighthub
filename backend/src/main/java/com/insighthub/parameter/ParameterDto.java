@@ -17,6 +17,7 @@ public class ParameterDto {
      */
     private String type;
     private String defaultValue;
+    private String resolvedDefaultValue;
     private String placeholder;
     private boolean required;
     private int position;

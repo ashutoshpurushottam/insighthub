@@ -64,11 +64,12 @@ export function ParameterForm({
 
     const defaults: ParameterValues = {};
     parameters.forEach((param) => {
-      if (param.defaultValue && !values[param.name]) {
+      const resolvedDefault = (param as any).resolvedDefaultValue ?? param.defaultValue;
+      if (resolvedDefault && !values[param.name]) {
         if (param.multiValue) {
-          defaults[param.name] = [param.defaultValue];
+          defaults[param.name] = [resolvedDefault];
         } else {
-          defaults[param.name] = param.defaultValue;
+          defaults[param.name] = resolvedDefault;
         }
       }
     });

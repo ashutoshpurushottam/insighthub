@@ -9,24 +9,19 @@ import lombok.Data;
 public class JobRequest {
 
     @NotBlank(message = "Name is required")
-    @Size(max = 100)
+    @Size(max = 200)
     private String name;
 
-    @Size(max = 500)
+    @Size(max = 2000)
     private String description;
 
     @NotNull(message = "Report is required")
     private Long reportId;
 
-    private Long scheduleId;
-
     @NotBlank(message = "Job type is required")
     private String jobType;
 
     private String outputFormat;
-
-    @Size(max = 1000)
-    private String recipients;
 
     private boolean active = true;
 }

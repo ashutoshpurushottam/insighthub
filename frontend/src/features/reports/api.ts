@@ -76,6 +76,17 @@ export async function runReport(
   return data;
 }
 
+export async function runAdHocQuery(
+  datasourceId: number,
+  sql: string,
+): Promise<RunReportResult> {
+  const { data } = await apiClient.post('/reports/run-adhoc', {
+    datasourceId,
+    sql,
+  });
+  return data;
+}
+
 // === Parameters ===
 
 export interface Parameter {

@@ -7,9 +7,9 @@ export function AppLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex flex-1 flex-col pl-64">
+      <div className="flex min-w-0 flex-1 flex-col pl-64">
         <Header />
-        <main className="flex-1 p-6">
+        <main className="min-w-0 flex-1 overflow-hidden p-6">
           <Outlet />
         </main>
       </div>

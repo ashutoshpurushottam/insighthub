@@ -32,7 +32,8 @@ export function RunReportModal({ report, onClose }: Props) {
   if (parameters && Object.keys(paramValues).length === 0) {
     const defaults: Record<string, string> = {};
     parameters.forEach((p) => {
-      if (p.defaultValue) defaults[p.name] = p.defaultValue;
+      const resolved = (p as any).resolvedDefaultValue ?? p.defaultValue;
+      if (resolved) defaults[p.name] = resolved;
     });
     if (Object.keys(defaults).length > 0) setParamValues(defaults);
   }

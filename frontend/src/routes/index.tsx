@@ -43,6 +43,20 @@ const GuardrailsSettingsPageWrapper = lazy(() =>
 const JobsPageWrapper = lazy(() =>
   import('@/features/jobs').then((m) => ({ default: m.JobsPage })),
 );
+const JobFormPageWrapper = lazy(() =>
+  import('@/features/jobs').then((m) => ({ default: m.JobFormPage })),
+);
+const JobHistoryPageWrapper = lazy(() =>
+  import('@/features/jobs').then((m) => ({ default: m.JobHistoryPage })),
+);
+const RunningJobsPageWrapper = lazy(() =>
+  import('@/features/jobs').then((m) => ({ default: m.RunningJobsPage })),
+);
+const SmtpServersPageWrapper = lazy(() =>
+  import('@/features/smtp-servers').then((m) => ({
+    default: m.SmtpServersPage,
+  })),
+);
 const DashboardsPageWrapper = lazy(() =>
   import('@/features/dashboards').then((m) => ({
     default: m.DashboardsPage,
@@ -171,6 +185,46 @@ export function AppRouter() {
           element={
             <LazyPage>
               <JobsPageWrapper />
+            </LazyPage>
+          }
+        />
+        <Route
+          path="jobs/running"
+          element={
+            <LazyPage>
+              <RunningJobsPageWrapper />
+            </LazyPage>
+          }
+        />
+        <Route
+          path="jobs/new"
+          element={
+            <LazyPage>
+              <JobFormPageWrapper />
+            </LazyPage>
+          }
+        />
+        <Route
+          path="jobs/:id/edit"
+          element={
+            <LazyPage>
+              <JobFormPageWrapper />
+            </LazyPage>
+          }
+        />
+        <Route
+          path="jobs/:id/history"
+          element={
+            <LazyPage>
+              <JobHistoryPageWrapper />
+            </LazyPage>
+          }
+        />
+        <Route
+          path="smtp-servers"
+          element={
+            <LazyPage>
+              <SmtpServersPageWrapper />
             </LazyPage>
           }
         />

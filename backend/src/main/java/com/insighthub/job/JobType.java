@@ -1,0 +1,13 @@
+package com.insighthub.job;
+
+public enum JobType {
+    EMAIL_ATTACHMENT,
+    EMAIL_INLINE,
+    PUBLISH,
+    ALERT,
+    BURST,
+    CONDITIONAL_EMAIL_ATTACHMENT,
+    CONDITIONAL_EMAIL_INLINE,
+    CONDITIONAL_PUBLISH,
+    JUST_RUN_IT
+}

@@ -54,6 +54,13 @@ public class ReportController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/run-adhoc")
+    public ResponseEntity<RunReportResult> runAdHocQuery(
+            @Valid @RequestBody AdHocQueryRequest request) {
+        return ResponseEntity.ok(
+            reportRunService.executeSql(request.getDatasourceId(), request.getSql()));
+    }
+
     @PostMapping("/{id}/run")
     public ResponseEntity<RunReportResult> runReport(
             @PathVariable Long id,

@@ -1,4 +1,5 @@
 import {
+  Activity,
   BarChart3,
   Calendar,
   Database,
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { label: 'Access Rights', href: '/access-rights', icon: KeyRound, permission: 'configure_access_rights' },
   { label: 'Schedules', href: '/schedules', icon: Calendar, permission: 'configure_schedules' },
   { label: 'Jobs', href: '/jobs', icon: Settings, permission: 'configure_jobs' },
+  { label: 'Running Jobs', href: '/jobs/running', icon: Activity, permission: 'configure_jobs' },
   { label: 'SMTP Servers', href: '/smtp-servers', icon: Mail, permission: 'configure_smtp_servers' },
   { label: 'Encryptors', href: '/encryptors', icon: Lock, permission: 'configure_encryptors' },
 ];

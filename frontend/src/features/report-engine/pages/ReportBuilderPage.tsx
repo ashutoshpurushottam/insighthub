@@ -1,15 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Copy, Save } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Copy, Play, Save } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { LoadingSpinner, PageHeader } from '@/components/ui';
+import { ErrorDisplay } from '@/features/reports/sql-editor/ErrorDisplay';
+import { ResultPane } from '@/features/reports/sql-editor/ResultPane';
+import { SplitPanel } from '@/features/reports/sql-editor/SplitPanel';
+import { SqlEditor } from '@/features/reports/sql-editor/SqlEditor';
+import { validateSql } from '@/features/reports/sql-editor/SqlValidator';
+import { useSqlEditorStore } from '@/features/reports/sql-editor/useSqlEditorStore';
 import { apiClient } from '@/lib/api-client';
 
 import { DrillDownManager } from '../components/DrillDownManager';
 import { ParameterManager } from '../components/ParameterManager';
-import { SqlEditor } from '../components/SqlEditor';
 import type { GuardrailsConfig, Report } from '../types';
 
 // === Types ===
@@ -391,6 +396,84 @@ function GeneralTab({ form, onChange, reportGroups, datasources }: GeneralTabPro
     onChange({ ...form, [field]: value });
   };
 
+  const {
+    isExecuting,
+    result,
+    error,
+    validationErrors,
+    execute,
+    setValidationErrors,
+  } = useSqlEditorStore();
+
+  const handleRun = useCallback(() => {
+    if (!form.datasourceId || isExecuting) return;
+
+    const errors = validateSql(form.sqlSource);
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setValidationErrors([]);
+    execute(form.sqlSource, Number(form.datasourceId));
+  }, [form.datasourceId, form.sqlSource, isExecuting, execute, setValidationErrors]);
+
+  const isRunDisabled = !form.datasourceId || isExecuting;
+  const runButtonLabel = isExecuting ? 'Running...' : 'Run';
+  const tooltipText = !form.datasourceId
+    ? 'Select a datasource to run queries'
+    : undefined;
+
+  const topContent = (
+    <div className="flex flex-col h-full">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-gray-50">
+        <button
+          type="button"
+          onClick={handleRun}
+          disabled={isRunDisabled}
+          title={tooltipText}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+            isRunDisabled
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800'
+          }`}
+          aria-label={tooltipText ?? runButtonLabel}
+        >
+          <Play className="h-4 w-4" aria-hidden="true" />
+          {runButtonLabel}
+        </button>
+      </div>
+
+      {/* SQL Editor */}
+      <div className="flex-1 min-h-0">
+        <SqlEditor
+          value={form.sqlSource}
+          onChange={(value) => update('sqlSource', value)}
+          onExecute={handleRun}
+          placeholder="SELECT * FROM ..."
+        />
+      </div>
+
+      {/* Validation errors */}
+      {validationErrors.length > 0 && (
+        <div className="flex flex-col gap-1 px-3 py-2">
+          {validationErrors.map((err) => (
+            <ErrorDisplay
+              key={err.type}
+              message={err.message}
+              type="validation"
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const bottomContent = (
+    <ResultPane isLoading={isExecuting} result={result} error={error} />
+  );
+
   return (
     <div className="space-y-6">
       {/* Name & Contact Person */}
@@ -467,15 +550,12 @@ function GeneralTab({ form, onChange, reportGroups, datasources }: GeneralTabPro
         </div>
       </div>
 
-      {/* SQL Editor */}
+      {/* SQL Editor with Run button and Result Pane */}
       <div>
         <label className="label">SQL Source</label>
-        <SqlEditor
-          value={form.sqlSource}
-          onChange={(value) => update('sqlSource', value)}
-          placeholder="SELECT * FROM ..."
-          rows={14}
-        />
+        <div style={{ height: '500px' }}>
+          <SplitPanel topContent={topContent} bottomContent={bottomContent} />
+        </div>
       </div>
 
       {/* Report Type, Default Format, Active Toggle */}

@@ -9,6 +9,7 @@ import { fetchDatasources } from '@/features/datasources/api';
 import { fetchReportGroups } from '@/features/report-groups/api';
 
 import { createReport, updateReport, type Report } from './api';
+import { SqlEditorPanel } from './sql-editor/SqlEditorPanel';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -43,6 +44,8 @@ export function ReportFormModal({ report, onClose }: Props) {
   const {
     register,
     handleSubmit,
+    control,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -57,6 +60,8 @@ export function ReportFormModal({ report, onClose }: Props) {
         }
       : { active: true },
   });
+
+  const watchedDatasourceId = watch('datasourceId') ?? null;
 
   const mutation = useMutation({
     mutationFn: (data: FormData) => {
@@ -141,11 +146,11 @@ export function ReportFormModal({ report, onClose }: Props) {
 
           <div>
             <label className="label">SQL Source</label>
-            <textarea
-              rows={8}
-              className="input-field font-mono text-sm"
-              placeholder="SELECT * FROM ..."
-              {...register('reportSource')}
+            <SqlEditorPanel
+              control={control}
+              name="reportSource"
+              datasourceId={watchedDatasourceId as number | null}
+              reportId={report?.id}
             />
           </div>
 
