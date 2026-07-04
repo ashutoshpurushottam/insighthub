@@ -59,6 +59,7 @@ public class ReportService {
             .contactPerson(request.getContactPerson())
             .active(request.isActive())
             .usePreparedStatements(request.isUsePreparedStatements())
+            .usesRules(request.isUsesRules())
             .reportSource(request.getReportSource())
             .defaultReportFormat(request.getDefaultReportFormat())
             .createdBy(createdBy)
@@ -79,6 +80,7 @@ public class ReportService {
         entity.setContactPerson(request.getContactPerson());
         entity.setActive(request.isActive());
         entity.setUsePreparedStatements(request.isUsePreparedStatements());
+        entity.setUsesRules(request.isUsesRules());
         entity.setReportSource(request.getReportSource());
         entity.setDefaultReportFormat(request.getDefaultReportFormat());
         entity.setUpdatedBy(updatedBy);
@@ -122,6 +124,7 @@ public class ReportService {
             .active(source.isActive())
             .hidden(source.isHidden())
             .usePreparedStatements(source.isUsePreparedStatements())
+            .usesRules(source.isUsesRules())
             .reportSource(source.getReportSource())
             .defaultReportFormat(source.getDefaultReportFormat())
             .createdBy(username)
@@ -168,6 +171,7 @@ public class ReportService {
             .active(report.isActive())
             .hidden(report.isHidden())
             .usePreparedStatements(report.isUsePreparedStatements())
+            .usesRules(report.isUsesRules())
             .defaultReportFormat(report.getDefaultReportFormat())
             .createdAt(report.getCreatedAt())
             .updatedAt(report.getUpdatedAt())

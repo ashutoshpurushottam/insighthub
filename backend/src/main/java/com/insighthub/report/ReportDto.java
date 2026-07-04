@@ -21,6 +21,7 @@ public class ReportDto {
     private boolean active;
     private boolean hidden;
     private boolean usePreparedStatements;
+    private boolean usesRules;
     private String defaultReportFormat;
     private String reportSource;
     private LocalDateTime createdAt;

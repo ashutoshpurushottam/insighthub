@@ -15,11 +15,12 @@ import { apiClient } from '@/lib/api-client';
 
 import { DrillDownManager } from '../components/DrillDownManager';
 import { ParameterManager } from '../components/ParameterManager';
+import { ReportRulesManager } from '../components/ReportRulesManager';
 import type { GuardrailsConfig, Report } from '../types';
 
 // === Types ===
 
-type TabId = 'general' | 'parameters' | 'drill-downs' | 'guardrails';
+type TabId = 'general' | 'parameters' | 'rules' | 'drill-downs' | 'guardrails';
 
 interface TabDefinition {
   id: TabId;
@@ -29,6 +30,7 @@ interface TabDefinition {
 const TABS: TabDefinition[] = [
   { id: 'general', label: 'General' },
   { id: 'parameters', label: 'Parameters' },
+  { id: 'rules', label: 'Rules' },
   { id: 'drill-downs', label: 'Drill-Downs' },
   { id: 'guardrails', label: 'Guardrails' },
 ];
@@ -52,6 +54,7 @@ interface GeneralFormState {
   sqlSource: string;
   reportType: string;
   active: boolean;
+  usesRules: boolean;
   defaultFormat: string;
 }
 
@@ -134,6 +137,7 @@ export function ReportBuilderPage() {
     sqlSource: '',
     reportType: '',
     active: true,
+    usesRules: false,
     defaultFormat: 'CSV',
   });
 
@@ -185,6 +189,7 @@ export function ReportBuilderPage() {
         sqlSource: report.reportSource ?? '',
         reportType: report.reportType != null ? String(report.reportType) : '',
         active: report.active ?? true,
+        usesRules: report.usesRules ?? false,
         defaultFormat: report.defaultReportFormat ?? 'CSV',
       });
     }
@@ -216,6 +221,7 @@ export function ReportBuilderPage() {
         reportSource: general.sqlSource,
         reportType: general.reportType ? Number(general.reportType) : 0,
         active: general.active,
+        usesRules: general.usesRules,
         defaultReportFormat: general.defaultFormat || undefined,
       };
 
@@ -327,7 +333,7 @@ export function ReportBuilderPage() {
         <nav className="-mb-px flex space-x-8" aria-label="Report builder tabs">
           {TABS.map((tab) => {
             const isDisabled =
-              !isEditMode && (tab.id === 'parameters' || tab.id === 'drill-downs');
+              !isEditMode && (tab.id === 'parameters' || tab.id === 'rules' || tab.id === 'drill-downs');
             return (
               <button
                 key={tab.id}
@@ -363,6 +369,10 @@ export function ReportBuilderPage() {
 
         {activeTab === 'parameters' && reportId && (
           <ParameterManager reportId={reportId} />
+        )}
+
+        {activeTab === 'rules' && reportId && (
+          <ReportRulesManager reportId={reportId} />
         )}
 
         {activeTab === 'drill-downs' && reportId && (
@@ -558,7 +568,7 @@ function GeneralTab({ form, onChange, reportGroups, datasources }: GeneralTabPro
         </div>
       </div>
 
-      {/* Report Type, Default Format, Active Toggle */}
+      {/* Report Type, Default Format, Active Toggle, Uses Rules Toggle */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
           <label className="label">Report Type</label>
@@ -583,8 +593,8 @@ function GeneralTab({ form, onChange, reportGroups, datasources }: GeneralTabPro
             ))}
           </select>
         </div>
-        <div className="flex items-end">
-          <label className="flex items-center gap-2 pb-2 text-sm text-gray-700">
+        <div className="flex flex-col justify-end gap-2 pb-2">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
             <input
               type="checkbox"
               checked={form.active}
@@ -592,6 +602,15 @@ function GeneralTab({ form, onChange, reportGroups, datasources }: GeneralTabPro
               className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
             />
             Active
+          </label>
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={form.usesRules}
+              onChange={(e) => update('usesRules', e.target.checked)}
+              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            Uses Rules
           </label>
         </div>
       </div>

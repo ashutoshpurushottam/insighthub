@@ -30,6 +30,8 @@ public class CreateReportRequest {
 
     private boolean usePreparedStatements = true;
 
+    private boolean usesRules = false;
+
     private String reportSource;
 
     @Size(max = 50)

@@ -54,6 +54,9 @@ public class ReportEntity {
     @Column(name = "use_prepared_statements", nullable = false)
     private boolean usePreparedStatements = true;
 
+    @Column(name = "uses_rules", nullable = false)
+    private boolean usesRules = false;
+
     @Column(columnDefinition = "TEXT")
     private String reportSource;
 

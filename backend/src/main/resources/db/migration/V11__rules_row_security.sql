@@ -1,0 +1,65 @@
+-- V11: Rules & Row-Level Security
+-- Adds rule definitions, report-rule mappings, user/group rule values,
+-- and the uses_rules flag on reports for automatic SQL filtering.
+
+-- ============================================================
+-- Rule Definitions
+-- ============================================================
+CREATE TABLE rules (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL UNIQUE,
+    description VARCHAR(500),
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- Report-Rule Associations
+-- Maps a rule to a report with the column name the rule filters on
+-- ============================================================
+CREATE TABLE report_rules (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    report_id   BIGINT NOT NULL,
+    rule_id     BIGINT NOT NULL,
+    column_name VARCHAR(200) NOT NULL,
+    CONSTRAINT fk_rr_report FOREIGN KEY (report_id) REFERENCES reports(id) ON DELETE CASCADE,
+    CONSTRAINT fk_rr_rule FOREIGN KEY (rule_id) REFERENCES rules(id) ON DELETE CASCADE,
+    CONSTRAINT uq_rr UNIQUE (report_id, rule_id)
+);
+
+CREATE INDEX idx_rr_report ON report_rules(report_id);
+CREATE INDEX idx_rr_rule ON report_rules(rule_id);
+
+-- ============================================================
+-- Rule Values per User
+-- ============================================================
+CREATE TABLE user_rule_values (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id     BIGINT NOT NULL,
+    rule_id     BIGINT NOT NULL,
+    rule_value  VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_urv_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_urv_rule FOREIGN KEY (rule_id) REFERENCES rules(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_urv_user ON user_rule_values(user_id);
+CREATE INDEX idx_urv_rule ON user_rule_values(rule_id);
+
+-- ============================================================
+-- Rule Values per User Group
+-- ============================================================
+CREATE TABLE user_group_rule_values (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_group_id   BIGINT NOT NULL,
+    rule_id         BIGINT NOT NULL,
+    rule_value      VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_ugrv_group FOREIGN KEY (user_group_id) REFERENCES user_groups(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ugrv_rule FOREIGN KEY (rule_id) REFERENCES rules(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ugrv_group ON user_group_rule_values(user_group_id);
+CREATE INDEX idx_ugrv_rule ON user_group_rule_values(rule_id);
+
+-- ============================================================
+-- Add uses_rules flag to reports table
+-- ============================================================
+ALTER TABLE reports ADD COLUMN uses_rules BOOLEAN DEFAULT FALSE NOT NULL;

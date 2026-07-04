@@ -77,6 +77,12 @@ const AccessRightsPageWrapper = lazy(() =>
     default: m.AccessRightsPage,
   })),
 );
+const RulesPageWrapper = lazy(() =>
+  import('@/features/rules').then((m) => ({ default: m.RulesPage })),
+);
+const RuleValuesPageWrapper = lazy(() =>
+  import('@/features/rules').then((m) => ({ default: m.RuleValuesPage })),
+);
 
 function LazyPage({ children }: { children: React.ReactNode }) {
   return (
@@ -257,6 +263,22 @@ export function AppRouter() {
           element={
             <LazyPage>
               <AccessRightsPageWrapper />
+            </LazyPage>
+          }
+        />
+        <Route
+          path="rules"
+          element={
+            <LazyPage>
+              <RulesPageWrapper />
+            </LazyPage>
+          }
+        />
+        <Route
+          path="rule-values"
+          element={
+            <LazyPage>
+              <RuleValuesPageWrapper />
             </LazyPage>
           }
         />

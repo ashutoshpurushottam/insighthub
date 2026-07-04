@@ -16,6 +16,7 @@ export interface Report {
   reportSource: string;
   reportType?: number;
   active: boolean;
+  usesRules: boolean;
   defaultReportFormat?: string;
   createdBy?: string;
   createdAt?: string;

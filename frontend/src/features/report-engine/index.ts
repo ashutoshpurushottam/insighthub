@@ -24,6 +24,8 @@ export { DrillDownManager } from './components/DrillDownManager';
 
 export { ParameterManager } from './components/ParameterManager';
 
+export { ReportRulesManager } from './components/ReportRulesManager';
+
 export { ReportBuilderPage } from './pages/ReportBuilderPage';
 
 export { ReportRunnerPage } from './pages/ReportRunnerPage';

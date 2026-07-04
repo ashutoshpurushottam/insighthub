@@ -14,6 +14,7 @@ import com.insighthub.parameter.ParameterRepository;
 import com.insighthub.parameter.ParameterValidator;
 import com.insighthub.report.ReportEntity;
 import com.insighthub.report.ReportRepository;
+import com.insighthub.rule.RuleResolver;
 import com.insighthub.user.UserEntity;
 import com.insighthub.user.UserRepository;
 import com.insighthub.usergroup.UserGroupEntity;
@@ -73,6 +74,7 @@ public class ReportExecutionService {
     private final XParameterProcessor xParameterProcessor;
     private final SqlParameterBinder sqlParameterBinder;
     private final FixedParameterValueService fixedParameterValueService;
+    private final RuleResolver ruleResolver;
 
     /**
      * Executes a report through the full 7-step pipeline.
@@ -145,6 +147,16 @@ public class ReportExecutionService {
             // ===== Step 3: Guardrails Check — date range (Requirements 20.1, 20.2, 20.3) =====
             executionGuard.validate(reportId, resolvedParams);
 
+            // ===== Step 3.5: Rule Resolution (Requirement 4) =====
+            // If the report uses rules, resolve the user's rule-based WHERE clauses
+            // and replace the #rules# placeholder in the SQL source.
+            // Throws IllegalStateException if user has no values for a required rule.
+            String reportSql = report.getReportSource();
+            if (report.isUsesRules()) {
+                String rulesClause = ruleResolver.resolve(reportId, user.getId());
+                reportSql = reportSql.replace("#rules#", rulesClause);
+            }
+
             // ===== Step 4–5: SQL Construction + Execution =====
             // Branch based on report.usePreparedStatements flag (Requirement 5.5, 5.6)
             long startTime = System.currentTimeMillis();
@@ -153,7 +165,7 @@ public class ReportExecutionService {
 
             if (report.isUsePreparedStatements()) {
                 // === Prepared Statement Path (Requirement 5) ===
-                String sql = report.getReportSource();
+                String sql = reportSql;
                 if (sql == null || sql.isBlank()) {
                     throw new IllegalArgumentException("Report SQL source is empty");
                 }
@@ -196,7 +208,7 @@ public class ReportExecutionService {
                         request.getPage(), request.getPageSize());
             } else {
                 // === String Substitution Fallback Path (Requirement 5.5) ===
-                String sql = constructSql(report.getReportSource(), parameterDefs, resolvedParams,
+                String sql = constructSql(reportSql, parameterDefs, resolvedParams,
                         request.getSortColumn(), request.getSortDirection());
 
                 // Execute with plain Statement (no bindings)

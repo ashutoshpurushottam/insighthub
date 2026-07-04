@@ -11,6 +11,7 @@ import com.insighthub.parameter.ParameterEntity;
 import com.insighthub.parameter.ParameterRepository;
 import com.insighthub.report.ReportEntity;
 import com.insighthub.report.ReportRepository;
+import com.insighthub.rule.RuleResolver;
 import com.insighthub.user.UserEntity;
 import com.insighthub.user.UserRepository;
 import com.insighthub.usergroup.UserGroupEntity;
@@ -68,6 +69,7 @@ public class ExportController {
     private final CsvExportService csvExportService;
     private final ExcelExportService excelExportService;
     private final PdfExportService pdfExportService;
+    private final RuleResolver ruleResolver;
 
     /**
      * POST /api/reports/{id}/export/csv — Stream CSV export.
@@ -81,7 +83,9 @@ public class ExportController {
             @AuthenticationPrincipal UserDetails currentUser,
             HttpServletResponse response) throws IOException {
 
-        ReportEntity report = loadAndAuthorize(id, currentUser.getUsername());
+        AuthorizedContext ctx = loadAndAuthorize(id, currentUser.getUsername());
+        ReportEntity report = ctx.report();
+        Long userId = ctx.user().getId();
         GuardrailsConfigEntity guardrails = guardrailsService.getEffectiveGuardrails(id);
         DataSource dataSource = createDataSource(report.getDatasource());
 
@@ -96,12 +100,12 @@ public class ExportController {
 
         if (report.isUsePreparedStatements()) {
             // Prepared statement path (Requirement 5.4)
-            ExportBindResult bindResult = buildPreparedExportSql(report, request);
+            ExportBindResult bindResult = buildPreparedExportSql(report, request, userId);
             csvExportService.export(dataSource, bindResult.sql(), bindResult.bindings(),
                     guardrails, response.getOutputStream(), report.getName());
         } else {
             // String substitution fallback
-            String sql = buildExportSql(report, request);
+            String sql = buildExportSql(report, request, userId);
             csvExportService.export(dataSource, sql, guardrails, response.getOutputStream(), report.getName());
         }
     }
@@ -118,7 +122,9 @@ public class ExportController {
             @AuthenticationPrincipal UserDetails currentUser,
             HttpServletResponse response) throws IOException {
 
-        ReportEntity report = loadAndAuthorize(id, currentUser.getUsername());
+        AuthorizedContext ctx = loadAndAuthorize(id, currentUser.getUsername());
+        ReportEntity report = ctx.report();
+        Long userId = ctx.user().getId();
         GuardrailsConfigEntity guardrails = guardrailsService.getEffectiveGuardrails(id);
         DataSource dataSource = createDataSource(report.getDatasource());
 
@@ -132,12 +138,12 @@ public class ExportController {
 
         if (report.isUsePreparedStatements()) {
             // Prepared statement path (Requirement 5.4)
-            ExportBindResult bindResult = buildPreparedExportSql(report, request);
+            ExportBindResult bindResult = buildPreparedExportSql(report, request, userId);
             excelExportService.export(dataSource, bindResult.sql(), bindResult.bindings(),
                     guardrails, response.getOutputStream());
         } else {
             // String substitution fallback
-            String sql = buildExportSql(report, request);
+            String sql = buildExportSql(report, request, userId);
             excelExportService.export(dataSource, sql, guardrails, response.getOutputStream());
         }
     }
@@ -154,7 +160,9 @@ public class ExportController {
             @AuthenticationPrincipal UserDetails currentUser,
             HttpServletResponse response) throws IOException {
 
-        ReportEntity report = loadAndAuthorize(id, currentUser.getUsername());
+        AuthorizedContext ctx = loadAndAuthorize(id, currentUser.getUsername());
+        ReportEntity report = ctx.report();
+        Long userId = ctx.user().getId();
         GuardrailsConfigEntity guardrails = guardrailsService.getEffectiveGuardrails(id);
         DataSource dataSource = createDataSource(report.getDatasource());
 
@@ -168,12 +176,12 @@ public class ExportController {
 
         if (report.isUsePreparedStatements()) {
             // Prepared statement path (Requirement 5.4)
-            ExportBindResult bindResult = buildPreparedExportSql(report, request);
+            ExportBindResult bindResult = buildPreparedExportSql(report, request, userId);
             pdfExportService.export(dataSource, bindResult.sql(), bindResult.bindings(),
                     report.getName(), guardrails, response.getOutputStream());
         } else {
             // String substitution fallback
-            String sql = buildExportSql(report, request);
+            String sql = buildExportSql(report, request, userId);
             pdfExportService.export(dataSource, sql, report.getName(), guardrails, response.getOutputStream());
         }
     }
@@ -186,11 +194,11 @@ public class ExportController {
      *
      * @param reportId the report ID
      * @param username the authenticated username
-     * @return the report entity if access is granted
+     * @return the authorized context containing the report and user entities
      * @throws ResourceNotFoundException if report not found
      * @throws AccessDeniedException if user lacks access
      */
-    private ReportEntity loadAndAuthorize(Long reportId, String username) {
+    private AuthorizedContext loadAndAuthorize(Long reportId, String username) {
         ReportEntity report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new ResourceNotFoundException("Report", "id", reportId));
 
@@ -198,7 +206,13 @@ public class ExportController {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         checkAccess(user, report);
-        return report;
+        return new AuthorizedContext(report, user);
+    }
+
+    /**
+     * Holds the report and user pair after successful authorization.
+     */
+    private record AuthorizedContext(ReportEntity report, UserEntity user) {
     }
 
     /**
@@ -258,11 +272,19 @@ public class ExportController {
     /**
      * Builds the fully-substituted SQL for export by resolving parameter defaults
      * and substituting all :paramName placeholders using string substitution (fallback path).
+     * If the report uses rules, the #rules# placeholder is replaced with the user's
+     * effective rule-based WHERE clauses before parameter substitution.
      */
-    private String buildExportSql(ReportEntity report, ExportRequest request) {
+    private String buildExportSql(ReportEntity report, ExportRequest request, Long userId) {
         String sql = report.getReportSource();
         if (sql == null || sql.isBlank()) {
             throw new IllegalArgumentException("Report has no SQL source configured");
+        }
+
+        // Apply rule-based filtering before parameter substitution
+        if (report.isUsesRules()) {
+            String rulesClause = ruleResolver.resolve(report.getId(), userId);
+            sql = sql.replace("#rules#", rulesClause);
         }
 
         // Merge supplied params with resolved defaults
@@ -293,18 +315,27 @@ public class ExportController {
      * Builds export SQL using the prepared statement path: processes $x{...} blocks
      * via XParameterProcessor, then converts :paramName placeholders to positional ? parameters
      * via SqlParameterBinder.
+     * If the report uses rules, the #rules# placeholder is replaced with the user's
+     * effective rule-based WHERE clauses before parameter processing.
      *
      * <p>This method implements the same branching logic as ReportExecutionService
      * for the prepared statement execution path (Requirement 5.4).</p>
      *
      * @param report  the report entity
      * @param request the export request containing user-supplied parameters
+     * @param userId  the current user's ID for rule resolution
      * @return an ExportBindResult containing the processed SQL and ordered bindings
      */
-    private ExportBindResult buildPreparedExportSql(ReportEntity report, ExportRequest request) {
+    private ExportBindResult buildPreparedExportSql(ReportEntity report, ExportRequest request, Long userId) {
         String sql = report.getReportSource();
         if (sql == null || sql.isBlank()) {
             throw new IllegalArgumentException("Report has no SQL source configured");
+        }
+
+        // Apply rule-based filtering before parameter processing
+        if (report.isUsesRules()) {
+            String rulesClause = ruleResolver.resolve(report.getId(), userId);
+            sql = sql.replace("#rules#", rulesClause);
         }
 
         // Merge supplied params with resolved defaults
