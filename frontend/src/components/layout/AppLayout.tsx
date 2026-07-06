@@ -5,11 +5,11 @@ import { Sidebar } from './Sidebar';
 
 export function AppLayout() {
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#F7F8FA]">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col pl-64">
         <Header />
-        <main className="min-w-0 flex-1 overflow-hidden p-6">
+        <main className="min-w-0 flex-1 overflow-hidden p-8">
           <Outlet />
         </main>
       </div>

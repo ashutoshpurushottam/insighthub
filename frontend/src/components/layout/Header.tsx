@@ -16,20 +16,24 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
-      <div>{/* Breadcrumb or page title can go here */}</div>
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between bg-white px-8 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        {/* Breadcrumb area */}
+      </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-sm text-gray-700">
-          <UserIcon className="h-4 w-4" />
-          <span>{user?.fullName || user?.username}</span>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 rounded-lg bg-gray-50 px-3 py-1.5 text-sm text-gray-600">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-primary-600">
+            <UserIcon className="h-3.5 w-3.5" />
+          </div>
+          <span className="font-medium">{user?.fullName || user?.username}</span>
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors duration-150"
           title="Sign out"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Sign out</span>
         </button>
       </div>

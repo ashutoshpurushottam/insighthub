@@ -25,16 +25,21 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Response interceptor: handle 401 (token expired)
+// Response interceptor: handle 401/403 (token expired or access denied)
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
+    const status = error.response?.status;
     if (
-      error.response?.status === 401 &&
+      (status === 401 || status === 403) &&
       !error.config?.url?.includes('/auth/login')
     ) {
-      useAuthStore.getState().logout();
-      window.location.href = '/login';
+      // Only force logout if it looks like an auth issue (no valid session)
+      const token = useAuthStore.getState().token;
+      if (!token || status === 401) {
+        useAuthStore.getState().logout();
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   },
