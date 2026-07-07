@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, BarChart3, Play, Table2 } from 'lucide-react';
-import { useCallback, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { AlertTriangle, ArrowLeft, BarChart3, Play, Table2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { LoadingSpinner, PageHeader } from '@/components/ui';
 import { apiClient } from '@/lib/api-client';
@@ -35,10 +35,16 @@ type ViewMode = 'table' | 'chart';
 export function ReportRunnerPage() {
   const { id } = useParams<{ id: string }>();
   const reportId = Number(id);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [paramValues, setParamValues] = useState<ParameterValues>({});
   const [nullParams, setNullParams] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+
+  // Detect if this page was reached via drill-down (has query params)
+  const isDrillDown = searchParams.toString().length > 0;
+  const autoExecuted = useRef(false);
 
   // Load report metadata
   const {
@@ -80,6 +86,28 @@ export function ReportRunnerPage() {
   const handleRun = useCallback(() => {
     execute(paramValues, nullParams);
   }, [execute, paramValues, nullParams]);
+
+  // Auto-populate params from URL query string (drill-down navigation)
+  // and auto-execute the report
+  useEffect(() => {
+    if (!isDrillDown || autoExecuted.current || paramsLoading) return;
+
+    const urlParams: ParameterValues = {};
+    searchParams.forEach((value, key) => {
+      urlParams[key] = value;
+    });
+
+    // Merge URL params with any existing defaults from parameter definitions
+    if (Object.keys(urlParams).length > 0) {
+      setParamValues((prev) => ({ ...prev, ...urlParams }));
+
+      // Auto-execute with merged params after a short delay to let state settle
+      autoExecuted.current = true;
+      setTimeout(() => {
+        execute(urlParams, []);
+      }, 100);
+    }
+  }, [isDrillDown, searchParams, paramsLoading, execute]);
 
   // Export handlers — pass current params to export endpoints
   const handleExportCsv = useCallback(() => {
@@ -130,6 +158,18 @@ export function ReportRunnerPage() {
 
   return (
     <div className="min-w-0 space-y-6">
+      {/* Back button for drill-down navigation */}
+      {isDrillDown && (
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to parent report
+        </button>
+      )}
+
       <PageHeader
         title={report.name}
         description={report.description || 'Execute and view report results'}
@@ -261,6 +301,7 @@ export function ReportRunnerPage() {
               <ResultsTable
                 columns={result.columns}
                 rows={result.rows}
+                drillDownLinks={result.drillDownLinks}
               />
               <PaginationControls
                 pagination={result.pagination}

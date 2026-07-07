@@ -1,6 +1,5 @@
-package com.insighthub.reportgroup;
+package com.insighthub.division;
 
-import com.insighthub.division.DivisionEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,13 +8,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "report_groups")
+@Table(name = "divisions")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReportGroupEntity {
+public class DivisionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,10 +25,6 @@ public class ReportGroupEntity {
 
     @Column(length = 200)
     private String description;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "division_id")
-    private DivisionEntity division;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

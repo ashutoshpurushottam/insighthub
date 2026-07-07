@@ -3,10 +3,13 @@ package com.insighthub.report;
 import com.insighthub.common.exception.ResourceNotFoundException;
 import com.insighthub.datasource.DatasourceEntity;
 import com.insighthub.datasource.DatasourceRepository;
+import com.insighthub.parameter.ParameterEntity;
+import com.insighthub.parameter.ParameterRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.*;
 import java.util.*;
@@ -19,10 +22,12 @@ public class ReportRunService {
 
     private final ReportRepository reportRepository;
     private final DatasourceRepository datasourceRepository;
+    private final ParameterRepository parameterRepository;
 
     /**
      * Execute a report's SQL against its configured datasource and return tabular results.
      */
+    @Transactional(readOnly = true)
     public RunReportResult runReport(Long reportId, Map<String, String> params) {
         ReportEntity report = reportRepository.findById(reportId)
             .orElseThrow(() -> new ResourceNotFoundException("Report", "id", reportId));
@@ -35,12 +40,22 @@ public class ReportRunService {
             throw new IllegalArgumentException("Report has no datasource assigned");
         }
 
+        // Build effective parameters: start with defaults, overlay with provided values
+        Map<String, String> effectiveParams = new HashMap<>();
+        List<ParameterEntity> paramDefs = parameterRepository.findByReportIdOrderByPositionAsc(reportId);
+        for (ParameterEntity paramDef : paramDefs) {
+            if (paramDef.getDefaultValue() != null && !paramDef.getDefaultValue().isBlank()) {
+                effectiveParams.put(paramDef.getName(), paramDef.getDefaultValue());
+            }
+        }
+        if (params != null) {
+            effectiveParams.putAll(params);
+        }
+
         // Substitute :paramName placeholders with values
         String sql = report.getReportSource();
-        if (params != null) {
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                sql = sql.replace(":" + entry.getKey(), "'" + entry.getValue().replace("'", "''") + "'");
-            }
+        for (Map.Entry<String, String> entry : effectiveParams.entrySet()) {
+            sql = sql.replace(":" + entry.getKey(), "'" + entry.getValue().replace("'", "''") + "'");
         }
 
         DatasourceEntity ds = report.getDatasource();

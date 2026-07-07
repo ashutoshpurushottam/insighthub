@@ -1,6 +1,6 @@
 # InsightHub - Development Commands
 
-.PHONY: help dev backend frontend build clean docker-build docker-up docker-down k8s-apply k8s-delete
+.PHONY: help dev backend frontend build clean docker-build docker-up docker-down k8s-apply k8s-delete demo-up demo-down demo-reset demo-logs
 
 JAVA_HOME ?= /Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
 
@@ -55,3 +55,18 @@ k8s-apply: ## Apply all Kubernetes manifests
 
 k8s-delete: ## Delete insighthub namespace (removes all K8s resources)
 	kubectl delete namespace insighthub
+
+## Demo targets
+
+demo-up: ## Start demo environment
+	docker compose -f docker/docker-compose.demo.yml up -d
+
+demo-down: ## Stop demo environment
+	docker compose -f docker/docker-compose.demo.yml down
+
+demo-reset: ## Reset demo (destroy volumes and restart)
+	docker compose -f docker/docker-compose.demo.yml down -v
+	docker compose -f docker/docker-compose.demo.yml up -d
+
+demo-logs: ## Stream demo container logs
+	docker compose -f docker/docker-compose.demo.yml logs -f

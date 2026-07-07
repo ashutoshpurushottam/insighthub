@@ -1,5 +1,6 @@
 package com.insighthub.user;
 
+import com.insighthub.division.DivisionEntity;
 import com.insighthub.role.RoleEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -46,6 +47,10 @@ public class UserEntity {
 
     @Column(nullable = false)
     private boolean publicUser = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "division_id")
+    private DivisionEntity division;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

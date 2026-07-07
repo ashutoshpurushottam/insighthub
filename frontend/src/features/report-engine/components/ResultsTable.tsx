@@ -1,14 +1,16 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
-import type { SortDirection } from '../types';
+import type { DrillDownInfo, SortDirection } from '../types';
+import { DrillDownCell } from './DrillDownCell';
 
 interface ResultsTableProps {
   /** Column names from the query result */
   columns: string[];
   /** Row data from the query result */
   rows: Record<string, unknown>[];
-  /** Optional drill-down columns (passed through for DrillDownCell integration) */
+  /** Optional drill-down links for clickable columns */
+  drillDownLinks?: DrillDownInfo[];
   sortColumn?: string;
   sortDirection?: SortDirection;
   onSortChange?: (column: string, direction?: SortDirection) => void;
@@ -22,6 +24,7 @@ interface ResultsTableProps {
 export function ResultsTable({
   columns,
   rows,
+  drillDownLinks = [],
 }: ResultsTableProps) {
   const [sortColumn, setSortColumn] = useState<string | undefined>();
   const [sortDirection, setSortDirection] = useState<SortDirection | undefined>();
@@ -89,6 +92,15 @@ export function ResultsTable({
     });
   }, [rows, sortColumn, sortDirection]);
 
+  // Build a map of column -> drillDown for quick lookup
+  const drillDownMap = useMemo(() => {
+    const map = new Map<string, DrillDownInfo>();
+    for (const link of drillDownLinks) {
+      map.set(link.column, link);
+    }
+    return map;
+  }, [drillDownLinks]);
+
   if (columns.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
@@ -129,11 +141,23 @@ export function ResultsTable({
           ) : (
             sortedRows.map((row, rowIdx) => (
               <tr key={rowIdx} className="hover:bg-gray-50">
-                {columns.map((col) => (
-                  <td key={col} className="whitespace-nowrap px-4 py-2 text-gray-700">
-                    {formatCellValue(row[col])}
-                  </td>
-                ))}
+                {columns.map((col) => {
+                  const drillDown = drillDownMap.get(col);
+                  return (
+                    <td key={col} className="whitespace-nowrap px-4 py-2 text-gray-700">
+                      {drillDown ? (
+                        <DrillDownCell
+                          value={row[col]}
+                          drillDown={drillDown}
+                          row={row}
+                          paramMappings={[{ parentColumnName: col, childParamName: col }]}
+                        />
+                      ) : (
+                        formatCellValue(row[col])
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             ))
           )}
