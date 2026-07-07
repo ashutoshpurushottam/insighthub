@@ -1,11 +1,11 @@
 # InsightHub - Development Commands
 
-.PHONY: help dev backend frontend build clean
+.PHONY: help dev backend frontend build clean docker-build docker-up docker-down k8s-apply k8s-delete
 
 JAVA_HOME ?= /Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
 
 help: ## Show this help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 backend: ## Run backend (Spring Boot)
 	cd backend && JAVA_HOME=$(JAVA_HOME) mvn spring-boot:run
@@ -36,3 +36,22 @@ test-backend: ## Run backend tests
 
 test-frontend: ## Run frontend tests
 	cd frontend && pnpm test
+
+## Docker targets
+
+docker-build: ## Build Docker images
+	docker compose -f docker/docker-compose.yml build
+
+docker-up: ## Start Docker Compose stack
+	docker compose -f docker/docker-compose.yml up -d
+
+docker-down: ## Stop Docker Compose stack
+	docker compose -f docker/docker-compose.yml down
+
+## Kubernetes targets
+
+k8s-apply: ## Apply all Kubernetes manifests
+	kubectl apply -f k8s/
+
+k8s-delete: ## Delete insighthub namespace (removes all K8s resources)
+	kubectl delete namespace insighthub

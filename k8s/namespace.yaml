@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: insighthub
+  labels:
+    app.kubernetes.io/name: insighthub
+    app.kubernetes.io/part-of: insighthub
