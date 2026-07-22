@@ -1,0 +1,71 @@
+services:
+  insighthub-demo-mysql:
+    image: mysql:8.0
+    container_name: insighthub-demo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: insighthub
+      MYSQL_USER: insighthub
+      MYSQL_PASSWORD: insighthub
+    ports:
+      - "3307:3306"
+    volumes:
+      - insighthub_demo_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  olist-mysql:
+    build:
+      context: ..
+      dockerfile: demo/olist-db/Dockerfile
+    container_name: olist-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: olist
+      MYSQL_USER: olist
+      MYSQL_PASSWORD: olist
+      DEMO_DATA_VERSION: "1"
+    ports:
+      - "3308:3306"
+    volumes:
+      - olist_demo_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend/Dockerfile
+    container_name: insighthub-demo-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+      MYSQL_PASSWORD: insighthub
+    depends_on:
+      insighthub-demo-mysql:
+        condition: service_healthy
+      olist-mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend/Dockerfile
+    container_name: insighthub-demo-frontend
+    ports:
+      - "3000:80"
+    environment:
+      BACKEND_HOST: backend:8080
+    depends_on:
+      - backend
+
+volumes:
+  insighthub_demo_data:
+  olist_demo_data:

@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: insighthub-postgres
+    environment:
+      POSTGRES_DB: insighthub
+      POSTGRES_USER: insighthub
+      POSTGRES_PASSWORD: insighthub
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U insighthub -d insighthub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend/Dockerfile
+    container_name: insighthub-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/insighthub
+      SPRING_DATASOURCE_USERNAME: insighthub
+      SPRING_DATASOURCE_PASSWORD: insighthub
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend/Dockerfile
+    container_name: insighthub-frontend
+    ports:
+      - "3000:80"
+    environment:
+      BACKEND_HOST: backend:8080
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

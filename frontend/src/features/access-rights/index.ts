@@ -1,0 +1,1 @@
+export { AccessRightsPage } from './AccessRightsPage';

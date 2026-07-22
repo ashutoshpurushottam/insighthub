@@ -1,0 +1,19 @@
+# Profile for PostgreSQL (activate with --spring.profiles.active=postgres)
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/insighthub}
+    username: ${SPRING_DATASOURCE_USERNAME:insighthub}
+    password: ${SPRING_DATASOURCE_PASSWORD:insighthub}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: ${DB_POOL_MIN:5}
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      connection-timeout: 30000
+      initialization-fail-timeout: 30000
+
+  h2:
+    console:
+      enabled: false
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect

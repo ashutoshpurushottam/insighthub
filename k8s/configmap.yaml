@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: insighthub-config
+  namespace: insighthub
+data:
+  SPRING_PROFILES_ACTIVE: postgres
+  SERVER_PORT: "8080"
+  SPRING_FLYWAY_ENABLED: "true"
+  SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+  SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
