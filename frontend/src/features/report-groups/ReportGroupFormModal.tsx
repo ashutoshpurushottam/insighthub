@@ -3,16 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { z } from 'zod';
 
 import { createReportGroup, updateReportGroup, type ReportGroup } from './api';
+import { reportGroupSchema, type ReportGroupFormData } from './schemas';
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  description: z.string().max(200).optional(),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = ReportGroupFormData;
 
 interface Props {
   group?: ReportGroup | null;
@@ -28,7 +23,7 @@ export function ReportGroupFormModal({ group, onClose }: Props) {
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(reportGroupSchema),
     defaultValues: isEdit
       ? { name: group.name, description: group.description ?? '' }
       : {},

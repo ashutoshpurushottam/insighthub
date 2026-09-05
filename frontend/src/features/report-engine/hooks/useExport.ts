@@ -2,8 +2,15 @@ import { saveAs } from 'file-saver';
 import { useCallback, useState } from 'react';
 
 import { apiClient } from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/api-errors';
 
-export type ExportFormat = 'csv' | 'xlsx' | 'pdf';
+import {
+  getExportContentType,
+  resolveExportFilename,
+  type ExportFormat as UtilExportFormat,
+} from '../export-utils';
+
+export type ExportFormat = Extract<UtilExportFormat, 'csv' | 'xlsx' | 'pdf'>;
 
 interface ExportState {
   csv: boolean;
@@ -44,26 +51,19 @@ export function useExport({ reportId }: UseExportOptions) {
           { responseType: 'blob' },
         );
 
-        // Determine filename from Content-Disposition header or fallback
         const contentDisposition = response.headers?.['content-disposition'];
-        let filename = `${reportName || 'report'}.${format}`;
+        const filename = resolveExportFilename(
+          contentDisposition,
+          reportName,
+          format,
+        );
 
-        if (contentDisposition) {
-          const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-          if (match?.[1]) {
-            filename = match[1].replace(/['"]/g, '');
-          }
-        }
-
-        // Trigger browser download
         const blob = new Blob([response.data], {
-          type: getContentType(format),
+          type: getExportContentType(format),
         });
         saveAs(blob, filename);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Export failed. Please try again.';
-        setError(message);
+        setError(getErrorMessage(err, 'Export failed. Please try again.'));
       } finally {
         setLoading((prev) => ({ ...prev, [format]: false }));
       }
@@ -90,30 +90,12 @@ export function useExport({ reportId }: UseExportOptions) {
   );
 
   return {
-    /** Export as CSV */
     exportCsv,
-    /** Export as XLSX */
     exportXlsx,
-    /** Export as PDF */
     exportPdf,
-    /** Generic export by format */
     exportReport,
-    /** Loading state per format */
     loading,
-    /** Whether any export is currently in progress */
     isExporting: loading.csv || loading.xlsx || loading.pdf,
-    /** Last error message (cleared on next attempt) */
     error,
   };
-}
-
-function getContentType(format: ExportFormat): string {
-  switch (format) {
-    case 'csv':
-      return 'text/csv';
-    case 'xlsx':
-      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    case 'pdf':
-      return 'application/pdf';
-  }
 }

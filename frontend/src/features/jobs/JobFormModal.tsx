@@ -3,9 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { z } from 'zod';
 
 import { fetchReports } from '@/features/reports/api';
+import { queryKeys } from '@/lib/query-keys';
 
 import {
   createJob,
@@ -14,19 +14,9 @@ import {
   updateJob,
   type Job,
 } from './api';
+import { jobModalSchema, type JobModalFormData } from './schemas';
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  description: z.string().max(500).optional(),
-  reportId: z.coerce.number().min(1, 'Report is required'),
-  scheduleId: z.coerce.number().nullable().optional(),
-  jobType: z.string().min(1),
-  outputFormat: z.string().optional(),
-  recipients: z.string().max(1000).optional(),
-  active: z.boolean(),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = JobModalFormData;
 
 interface Props {
   job?: Job | null;
@@ -38,11 +28,11 @@ export function JobFormModal({ job, onClose }: Props) {
   const queryClient = useQueryClient();
 
   const { data: reports } = useQuery({
-    queryKey: ['reports'],
+    queryKey: queryKeys.reports.all,
     queryFn: fetchReports,
   });
   const { data: schedules } = useQuery({
-    queryKey: ['schedules'],
+    queryKey: queryKeys.jobs.schedules,
     queryFn: fetchSchedules,
   });
 
@@ -51,7 +41,7 @@ export function JobFormModal({ job, onClose }: Props) {
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(jobModalSchema),
     defaultValues: isEdit
       ? {
           name: job.name,
@@ -72,7 +62,7 @@ export function JobFormModal({ job, onClose }: Props) {
       return isEdit ? updateJob(job.id, payload) : createJob(payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
       toast.success(isEdit ? 'Job updated' : 'Job created');
       onClose();
     },
