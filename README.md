@@ -215,10 +215,12 @@ See the full [v1.1.0 release notes](https://github.com/ashutoshpurushottam/insig
 insighthub/
 ├── frontend/               # React 18 + TypeScript + Vite + Tailwind
 │   ├── src/
-│   │   ├── features/       # Feature modules (auth, users, reports, …)
+│   │   ├── features/       # Feature modules (auth, users, report-engine, …)
+│   │   │   └── report-engine/  # Runner, builder, drill-down, exports, Vitest
 │   │   ├── pages/          # Page-level components
 │   │   ├── components/     # Shared UI components
-│   │   └── lib/            # API client, hooks, utilities
+│   │   ├── lib/            # API client, errors, formatters, query keys, utils
+│   │   └── routes/         # App routes (lazy-loaded feature pages)
 │   └── public/
 ├── backend/                # Spring Boot 3 + Java 17
 │   └── src/main/java/com/insighthub/
@@ -265,7 +267,7 @@ The fastest way to see InsightHub running end-to-end is with Docker. The demo st
 
 ```bash
 # Clone the repo (if you haven't already)
-git clone https://github.com/your-org/insighthub.git
+git clone https://github.com/ashutoshpurushottam/insighthub.git
 cd insighthub
 
 # Start the full demo stack (builds images on first run, ~2–3 minutes)
@@ -333,7 +335,10 @@ pnpm dev
 make install && make frontend
 ```
 
-Starts at `http://localhost:3000` — API calls are proxied to the backend automatically.
+Starts at Vite’s default URL (typically `http://localhost:5173` or `http://127.0.0.1:5173`).  
+Backend CORS allows both `localhost` and `127.0.0.1` on ports `3000` and `5173`, so either host works for local login.
+
+> Prefer opening the UI on the same host you allow in CORS (`localhost` vs `127.0.0.1`) to avoid browser CORS failures during development.
 
 ### Run with PostgreSQL (production-like)
 
@@ -384,7 +389,8 @@ make clean          # Clean build artifacts
 
 | Service | URL |
 |---|---|
-| Frontend | http://localhost:3000 |
+| Frontend (demo / Docker) | http://localhost:3000 |
+| Frontend (Vite local) | http://localhost:5173 |
 | Backend API | http://localhost:8080/insighthub/api |
 | Swagger UI | http://localhost:8080/insighthub/swagger-ui.html |
 | H2 Console (dev only) | http://localhost:8080/insighthub/h2-console |
