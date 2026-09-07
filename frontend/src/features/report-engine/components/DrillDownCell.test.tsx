@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
 import { DrillDownCell } from './DrillDownCell';
@@ -62,6 +62,56 @@ describe('DrillDownCell', () => {
 
     fireEvent.click(screen.getByRole('button'));
     expect(navigate).toHaveBeenCalledWith('/reports/5/run?cust=Acme&reg=West');
+  });
+
+  it('encodes parent report context for Back navigation', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    render(
+      <MemoryRouter>
+        <DrillDownCell
+          value="Acme"
+          drillDown={{
+            column: 'customer',
+            childReportId: 5,
+            childReportName: 'Orders',
+          }}
+          row={{ customer: 'Acme' }}
+          paramMappings={[
+            { parentColumnName: 'customer', childParamName: 'cust' },
+          ]}
+          parentReportId={12}
+          parentPage={3}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+    expect(navigate).toHaveBeenCalledWith(
+      '/reports/5/run?cust=Acme&_ihFrom=12&_ihFromPage=3',
+    );
+  });
+
+  it('uses drillDown.paramMappings when prop mappings are omitted', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    render(
+      <MemoryRouter>
+        <DrillDownCell
+          value="Acme"
+          drillDown={{
+            column: 'customer',
+            childReportId: 5,
+            childReportName: 'Orders',
+            paramMappings: [
+              { parentColumnName: 'customer', childParamName: 'cust_id' },
+            ],
+          }}
+          row={{ customer: 'Acme' }}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+    expect(navigate).toHaveBeenCalledWith('/reports/5/run?cust_id=Acme');
   });
 
   it('falls back to trigger column when mappings are empty', async () => {
