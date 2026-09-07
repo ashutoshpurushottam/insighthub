@@ -5,83 +5,23 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
-import { z } from 'zod';
 
 import { LoadingSpinner } from '@/components/ui';
 import { fetchReports } from '@/features/reports/api';
 import { fetchSmtpServers } from '@/features/smtp-servers/api';
 import { apiClient } from '@/lib/api-client';
 
-// --- Constants ---
+import {
+  JOB_FORM_TYPES,
+  OUTPUT_FORMATS,
+  jobFormSchema,
+  type JobFormData,
+} from './schemas';
 
-const JOB_TYPES = [
-  'EMAIL_ATTACHMENT',
-  'EMAIL_INLINE',
-  'PUBLISH',
-  'ALERT',
-  'BURST',
-  'CONDITIONAL_EMAIL_ATTACHMENT',
-  'CONDITIONAL_EMAIL_INLINE',
-  'CONDITIONAL_PUBLISH',
-  'JUST_RUN_IT',
-] as const;
-
-const OUTPUT_FORMATS = ['CSV', 'XLSX', 'PDF', 'HTML'] as const;
+const JOB_TYPES = JOB_FORM_TYPES;
 
 const TABS = ['General', 'Schedule', 'Email', 'Output', 'Advanced'] as const;
 type Tab = (typeof TABS)[number];
-
-// --- Zod Schema ---
-
-const jobFormSchema = z.object({
-  // General
-  name: z.string().min(1, 'Name is required').max(200),
-  description: z.string().max(2000).optional().default(''),
-  reportId: z.coerce.number().min(1, 'Report is required'),
-  jobType: z.enum(JOB_TYPES),
-  outputFormat: z.string().max(20).optional().default('CSV'),
-  active: z.boolean().default(true),
-
-  // Schedule
-  cronSecond: z.string().max(20).optional().default('0'),
-  cronMinute: z.string().max(20).optional().default(''),
-  cronHour: z.string().max(20).optional().default(''),
-  cronDay: z.string().max(20).optional().default('?'),
-  cronMonth: z.string().max(20).optional().default('*'),
-  cronWeekday: z.string().max(20).optional().default('*'),
-  cronYear: z.string().max(20).optional().default('*'),
-  timeZone: z.string().max(50).optional().default(''),
-  startDate: z.string().optional().default(''),
-  endDate: z.string().optional().default(''),
-  extraSchedules: z.string().optional().default(''),
-  manual: z.boolean().default(false),
-
-  // Email
-  emailTo: z.string().max(2000).optional().default(''),
-  emailCc: z.string().max(2000).optional().default(''),
-  emailBcc: z.string().max(2000).optional().default(''),
-  emailReplyTo: z.string().max(500).optional().default(''),
-  emailFrom: z.string().max(200).optional().default(''),
-  emailSubject: z.string().max(500).optional().default(''),
-  emailMessage: z.string().optional().default(''),
-  smtpServerId: z.coerce.number().optional().nullable(),
-  dynamicRecipientsReportId: z.coerce.number().optional().nullable(),
-
-  // Output
-  runsToArchive: z.coerce.number().min(0).optional().default(0),
-  allowSharing: z.boolean().default(false),
-  allowSplitting: z.boolean().default(false),
-  fixedFileName: z.string().max(200).optional().default(''),
-  subDirectory: z.string().max(200).optional().default(''),
-
-  // Advanced
-  preRunReportIds: z.string().max(500).optional().default(''),
-  postRunReportIds: z.string().max(500).optional().default(''),
-  batchFile: z.string().max(200).optional().default(''),
-  errorNotificationEmail: z.string().max(500).optional().default(''),
-});
-
-type JobFormData = z.infer<typeof jobFormSchema>;
 
 // --- API helpers ---
 

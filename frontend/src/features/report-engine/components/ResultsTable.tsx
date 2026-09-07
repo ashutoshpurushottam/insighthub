@@ -2,6 +2,11 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
 import type { DrillDownInfo, SortDirection } from '../types';
+import {
+  formatCellValue,
+  nextSortState,
+  sortRows,
+} from '../table-utils';
 import { DrillDownCell } from './DrillDownCell';
 
 interface ResultsTableProps {
@@ -11,6 +16,10 @@ interface ResultsTableProps {
   rows: Record<string, unknown>[];
   /** Optional drill-down links for clickable columns */
   drillDownLinks?: DrillDownInfo[];
+  /** Parent report id — encoded into child drill-down URLs for Back */
+  parentReportId?: number;
+  /** Parent page — restored when navigating Back from a child report */
+  parentPage?: number;
   sortColumn?: string;
   sortDirection?: SortDirection;
   onSortChange?: (column: string, direction?: SortDirection) => void;
@@ -25,24 +34,17 @@ export function ResultsTable({
   columns,
   rows,
   drillDownLinks = [],
+  parentReportId,
+  parentPage,
 }: ResultsTableProps) {
   const [sortColumn, setSortColumn] = useState<string | undefined>();
   const [sortDirection, setSortDirection] = useState<SortDirection | undefined>();
 
   const handleHeaderClick = useCallback(
     (column: string) => {
-      if (sortColumn !== column) {
-        setSortColumn(column);
-        setSortDirection('ASC');
-      } else if (sortDirection === 'ASC') {
-        setSortDirection('DESC');
-      } else if (sortDirection === 'DESC') {
-        setSortColumn(undefined);
-        setSortDirection(undefined);
-      } else {
-        setSortColumn(column);
-        setSortDirection('ASC');
-      }
+      const next = nextSortState(sortColumn, sortDirection, column);
+      setSortColumn(next.column);
+      setSortDirection(next.direction);
     },
     [sortColumn, sortDirection],
   );
@@ -60,39 +62,11 @@ export function ResultsTable({
     return <ArrowUpDown className="h-3.5 w-3.5 text-gray-300" />;
   };
 
-  /** Client-side sorted rows */
-  const sortedRows = useMemo(() => {
-    if (!sortColumn || !sortDirection) {
-      return rows;
-    }
+  const sortedRows = useMemo(
+    () => sortRows(rows, sortColumn, sortDirection),
+    [rows, sortColumn, sortDirection],
+  );
 
-    return [...rows].sort((a, b) => {
-      const valA = a[sortColumn];
-      const valB = b[sortColumn];
-
-      // Handle nulls — push them to the end
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return 1;
-      if (valB == null) return -1;
-
-      let comparison = 0;
-
-      // Numeric comparison
-      if (typeof valA === 'number' && typeof valB === 'number') {
-        comparison = valA - valB;
-      } else {
-        // String comparison (case-insensitive)
-        comparison = String(valA).localeCompare(String(valB), undefined, {
-          numeric: true,
-          sensitivity: 'base',
-        });
-      }
-
-      return sortDirection === 'DESC' ? -comparison : comparison;
-    });
-  }, [rows, sortColumn, sortDirection]);
-
-  // Build a map of column -> drillDown for quick lookup
   const drillDownMap = useMemo(() => {
     const map = new Map<string, DrillDownInfo>();
     for (const link of drillDownLinks) {
@@ -150,7 +124,9 @@ export function ResultsTable({
                           value={row[col]}
                           drillDown={drillDown}
                           row={row}
-                          paramMappings={[{ parentColumnName: col, childParamName: col }]}
+                          paramMappings={drillDown.paramMappings}
+                          parentReportId={parentReportId}
+                          parentPage={parentPage}
                         />
                       ) : (
                         formatCellValue(row[col])
@@ -165,11 +141,4 @@ export function ResultsTable({
       </table>
     </div>
   );
-}
-
-/** Formats cell values for display */
-function formatCellValue(value: unknown): string {
-  if (value === null || value === undefined) return '—';
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  return String(value);
 }

@@ -119,6 +119,8 @@ export interface DrillDownInfo {
   column: string;
   childReportId: number;
   childReportName: string;
+  /** Parent column → child parameter mappings from drill-down config */
+  paramMappings?: DrillDownParamMapping[];
 }
 
 export interface PaginatedResult {

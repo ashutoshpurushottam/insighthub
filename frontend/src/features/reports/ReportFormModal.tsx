@@ -3,24 +3,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { z } from 'zod';
 
 import { fetchDatasources } from '@/features/datasources/api';
 import { fetchReportGroups } from '@/features/report-groups/api';
 
 import { createReport, updateReport, type Report } from './api';
+import { reportSchema, type ReportFormData } from './schemas';
 import { SqlEditorPanel } from './sql-editor/SqlEditorPanel';
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  shortDescription: z.string().max(254).optional(),
-  reportGroupId: z.coerce.number().nullable().optional(),
-  datasourceId: z.coerce.number().nullable().optional(),
-  reportSource: z.string().optional(),
-  active: z.boolean(),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = ReportFormData;
 
 interface Props {
   report?: Report | null;
@@ -48,7 +39,7 @@ export function ReportFormModal({ report, onClose }: Props) {
     watch,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(reportSchema),
     defaultValues: isEdit
       ? {
           name: report.name,

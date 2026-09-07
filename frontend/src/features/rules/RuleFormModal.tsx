@@ -3,16 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { z } from 'zod';
 
 import { createRule, updateRule, type Rule } from './api';
+import { ruleSchema, type RuleFormData } from './schemas';
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  description: z.string().max(500).optional(),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = RuleFormData;
 
 interface Props {
   rule?: Rule | null;
@@ -28,7 +23,7 @@ export function RuleFormModal({ rule, onClose }: Props) {
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(ruleSchema),
     defaultValues: isEdit
       ? {
           name: rule.name,
