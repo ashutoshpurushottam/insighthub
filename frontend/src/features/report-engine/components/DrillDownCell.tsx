@@ -2,7 +2,8 @@ import { ArrowRight } from 'lucide-react';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import type { DrillDownInfo } from '../types';
+import type { DrillDownInfo, DrillDownParamMapping } from '../types';
+import { buildDrillDownPath } from '../runner-utils';
 
 interface DrillDownCellProps {
   /** The display value of the cell */
@@ -12,7 +13,11 @@ interface DrillDownCellProps {
   /** The full row data, used to extract mapped param values */
   row: Record<string, unknown>;
   /** Optional param mappings: parentColumn -> childParamName */
-  paramMappings?: Array<{ parentColumnName: string; childParamName: string }>;
+  paramMappings?: DrillDownParamMapping[];
+  /** Parent report id used to restore navigation on Back */
+  parentReportId?: number;
+  /** Optional parent page to restore on Back */
+  parentPage?: number;
 }
 
 /**
@@ -23,30 +28,37 @@ export function DrillDownCell({
   value,
   drillDown,
   row,
-  paramMappings = [],
+  paramMappings,
+  parentReportId,
+  parentPage,
 }: DrillDownCellProps) {
   const navigate = useNavigate();
+  const mappings =
+    paramMappings ??
+    drillDown.paramMappings ??
+    [];
 
   const handleClick = useCallback(() => {
-    const searchParams = new URLSearchParams();
-
-    // Map parent row column values to child report parameter names
-    for (const mapping of paramMappings) {
-      const paramValue = row[mapping.parentColumnName];
-      if (paramValue !== null && paramValue !== undefined) {
-        searchParams.set(mapping.childParamName, String(paramValue));
-      }
-    }
-
-    // If no explicit mappings, use the trigger column value as a fallback
-    if (paramMappings.length === 0 && value !== null && value !== undefined) {
-      searchParams.set(drillDown.column, String(value));
-    }
-
-    const queryString = searchParams.toString();
-    const path = `/reports/${drillDown.childReportId}/run${queryString ? `?${queryString}` : ''}`;
+    const path = buildDrillDownPath({
+      childReportId: drillDown.childReportId,
+      triggerColumn: drillDown.column,
+      triggerValue: value,
+      row,
+      paramMappings: mappings,
+      parentReportId,
+      parentPage,
+    });
     navigate(path);
-  }, [navigate, drillDown, row, paramMappings, value]);
+  }, [
+    navigate,
+    drillDown.childReportId,
+    drillDown.column,
+    value,
+    row,
+    mappings,
+    parentReportId,
+    parentPage,
+  ]);
 
   const displayValue = formatCellValue(value);
 

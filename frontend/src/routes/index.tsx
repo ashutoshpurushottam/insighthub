@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useParams } from 'react-router-dom';
 
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -92,6 +92,12 @@ function LazyPage({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Remount runner when report id changes so execution state does not leak across reports */
+function ReportRunnerRoute() {
+  const { id } = useParams<{ id: string }>();
+  return <ReportRunnerPageWrapper key={id} />;
+}
+
 export function AppRouter() {
   return (
     <Routes>
@@ -142,7 +148,7 @@ export function AppRouter() {
           path="reports/:id/run"
           element={
             <LazyPage>
-              <ReportRunnerPageWrapper />
+              <ReportRunnerRoute />
             </LazyPage>
           }
         />

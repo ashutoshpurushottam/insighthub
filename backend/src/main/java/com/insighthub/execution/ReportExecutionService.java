@@ -449,15 +449,21 @@ public class ReportExecutionService {
     }
 
     /**
-     * Loads drill-down link information for the response.
+     * Loads drill-down link information (including param mappings) for the response.
      */
     private List<DrillDownInfo> loadDrillDownInfo(Long reportId) {
-        List<DrillDownLinkEntity> links = drillDownRepository.findByParentReportIdOrderByPositionAsc(reportId);
+        List<DrillDownLinkEntity> links = drillDownRepository.findByParentReportIdWithMappings(reportId);
         return links.stream()
                 .map(link -> DrillDownInfo.builder()
                         .column(link.getTriggerColumn())
                         .childReportId(link.getChildReport().getId())
                         .childReportName(link.getChildReport().getName())
+                        .paramMappings(link.getParamMappings().stream()
+                                .map(m -> DrillDownInfo.ParamMapping.builder()
+                                        .parentColumnName(m.getParentColumnName())
+                                        .childParamName(m.getChildParamName())
+                                        .build())
+                                .toList())
                         .build())
                 .toList();
     }

@@ -12,6 +12,17 @@ import { ParameterForm, type ParameterValues } from '../components/ParameterForm
 import { ResultsTable } from '../components/ResultsTable';
 import { useExport } from '../hooks/useExport';
 import { useReportExecution } from '../hooks/useReportExecution';
+import {
+  buildDefaultParamValues,
+  canAutoRunReport,
+  flattenParamValues,
+  isDrillDownNavigation,
+  mergeParamValues,
+  resolveParentReportPath,
+  shouldAutoRunFromSearch,
+  urlSearchToOverrides,
+  type ParamValues,
+} from '../runner-utils';
 import type { Parameter, Report } from '../types';
 
 // === API Functions ===
@@ -28,6 +39,15 @@ async function fetchParameters(reportId: number): Promise<Parameter[]> {
   return Array.isArray(data) ? data : [];
 }
 
+function toFormValues(values: ParamValues): ParameterValues {
+  const out: ParameterValues = {};
+  for (const [key, value] of Object.entries(values)) {
+    if (value === null || value === undefined) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
 // === Component ===
 
 type ViewMode = 'table' | 'chart';
@@ -37,13 +57,16 @@ export function ReportRunnerPage() {
   const reportId = Number(id);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const searchKey = searchParams.toString();
 
   const [paramValues, setParamValues] = useState<ParameterValues>({});
   const [nullParams, setNullParams] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [paramsReady, setParamsReady] = useState(false);
 
-  // Detect if this page was reached via drill-down (has query params)
-  const isDrillDown = searchParams.toString().length > 0;
+  const isDrillDown = isDrillDownNavigation(searchParams);
+  const shouldAutoRun = shouldAutoRunFromSearch(searchParams);
+  const parentPath = resolveParentReportPath(searchParams);
   const autoExecuted = useRef(false);
 
   // Load report metadata
@@ -73,6 +96,7 @@ export function ReportRunnerPage() {
     isSuccess,
     handlePageChange,
     handlePageSizeChange,
+    page,
   } = useReportExecution({ reportId });
 
   // Export hook
@@ -83,61 +107,69 @@ export function ReportRunnerPage() {
     loading: exportLoading,
   } = useExport({ reportId });
 
+  // Reset local state when navigating to a different report
+  useEffect(() => {
+    autoExecuted.current = false;
+    setParamValues({});
+    setNullParams([]);
+    setViewMode('table');
+    setParamsReady(false);
+  }, [reportId]);
+
+  // Merge URL overrides with parameter defaults (drill-down + shared links)
+  useEffect(() => {
+    if (paramsLoading) return;
+
+    const defaults = buildDefaultParamValues(parameters);
+    const overrides = urlSearchToOverrides(searchParams, parameters);
+    setParamValues(toFormValues(mergeParamValues(defaults, overrides)));
+    setParamsReady(true);
+    autoExecuted.current = false;
+  }, [reportId, parameters, paramsLoading, searchKey, searchParams]);
+
   const handleRun = useCallback(() => {
-    execute(paramValues, nullParams);
+    execute(flattenParamValues(paramValues), nullParams);
   }, [execute, paramValues, nullParams]);
 
-  // Auto-populate params from URL query string (drill-down navigation)
-  // and auto-execute the report
+  // Auto-run on drill-down arrival or return from a child report
   useEffect(() => {
-    if (!isDrillDown || autoExecuted.current || paramsLoading) return;
-
-    const urlParams: ParameterValues = {};
-    searchParams.forEach((value, key) => {
-      urlParams[key] = value;
-    });
-
-    // Merge URL params with any existing defaults from parameter definitions
-    if (Object.keys(urlParams).length > 0) {
-      setParamValues((prev) => ({ ...prev, ...urlParams }));
-
-      // Auto-execute with merged params after a short delay to let state settle
-      autoExecuted.current = true;
-      setTimeout(() => {
-        execute(urlParams, []);
-      }, 100);
+    if (!paramsReady || !shouldAutoRun || autoExecuted.current || paramsLoading) {
+      return;
     }
-  }, [isDrillDown, searchParams, paramsLoading, execute]);
+    if (!canAutoRunReport(parameters, paramValues)) {
+      return;
+    }
+    autoExecuted.current = true;
+    execute(flattenParamValues(paramValues), nullParams);
+  }, [
+    paramsReady,
+    shouldAutoRun,
+    paramsLoading,
+    parameters,
+    paramValues,
+    nullParams,
+    execute,
+  ]);
+
+  const handleBack = useCallback(() => {
+    if (parentPath) {
+      navigate(parentPath);
+      return;
+    }
+    navigate(-1);
+  }, [navigate, parentPath]);
 
   // Export handlers — pass current params to export endpoints
   const handleExportCsv = useCallback(() => {
-    const exportParams: Record<string, string | string[]> = {};
-    for (const [key, value] of Object.entries(paramValues)) {
-      if (value !== undefined && value !== null && value !== '') {
-        exportParams[key] = value as string | string[];
-      }
-    }
-    exportCsv(exportParams, report?.name);
+    exportCsv(flattenParamValues(paramValues), report?.name);
   }, [exportCsv, paramValues, report?.name]);
 
   const handleExportXlsx = useCallback(() => {
-    const exportParams: Record<string, string | string[]> = {};
-    for (const [key, value] of Object.entries(paramValues)) {
-      if (value !== undefined && value !== null && value !== '') {
-        exportParams[key] = value as string | string[];
-      }
-    }
-    exportXlsx(exportParams, report?.name);
+    exportXlsx(flattenParamValues(paramValues), report?.name);
   }, [exportXlsx, paramValues, report?.name]);
 
   const handleExportPdf = useCallback(() => {
-    const exportParams: Record<string, string | string[]> = {};
-    for (const [key, value] of Object.entries(paramValues)) {
-      if (value !== undefined && value !== null && value !== '') {
-        exportParams[key] = value as string | string[];
-      }
-    }
-    exportPdf(exportParams, report?.name);
+    exportPdf(flattenParamValues(paramValues), report?.name);
   }, [exportPdf, paramValues, report?.name]);
 
   // Loading state for initial page load
@@ -162,7 +194,7 @@ export function ReportRunnerPage() {
       {isDrillDown && (
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -302,6 +334,8 @@ export function ReportRunnerPage() {
                 columns={result.columns}
                 rows={result.rows}
                 drillDownLinks={result.drillDownLinks}
+                parentReportId={reportId}
+                parentPage={page}
               />
               <PaginationControls
                 pagination={result.pagination}
