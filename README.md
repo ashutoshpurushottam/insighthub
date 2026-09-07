@@ -6,12 +6,14 @@ A modern Reporting & Business Intelligence platform — React + TypeScript front
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-brightgreen?logo=springboot)
 ![React](https://img.shields.io/badge/React-18-blue?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)
+![Release](https://img.shields.io/github/v/release/ashutoshpurushottam/insighthub)
 ![License](https://img.shields.io/badge/License-GPLv3-blue)
 
 ---
 
 ## Table of Contents
 
+- [What's New](#whats-new)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -20,7 +22,22 @@ A modern Reporting & Business Intelligence platform — React + TypeScript front
 - [Default Credentials](#default-credentials)
 - [Key URLs](#key-urls)
 - [Environment Variables](#environment-variables)
+- [Development Workflow](#development-workflow)
+- [Releases](#releases)
 - [License](#license)
+
+---
+
+## What's New
+
+### v1.1.0
+
+- **Report runner UX** — richer results table (client-side sort), export toolbar, pagination, and clearer chart/job-history/dashboard views
+- **Drill-down navigation** — execute API returns column→parameter mappings; child reports auto-run when required params are present; **Back** returns to the parent report path (and re-runs) instead of fragile browser history
+- **Frontend hardening** — shared Zod schemas and helpers (`api-errors`, `formatters`, `query-keys`, `list-utils`, `runner-utils`), Vitest coverage for report-engine components, Vite bootstrap for local UI work
+- **Local auth/CORS** — backend auth stack restored for local login; CORS allows `localhost` / `127.0.0.1` on ports `3000` and `5173`
+
+See the full [v1.1.0 release notes](https://github.com/ashutoshpurushottam/insighthub/releases/tag/v1.1.0).
 
 ---
 
@@ -51,14 +68,15 @@ A modern Reporting & Business Intelligence platform — React + TypeScript front
 
 ### 4. Report Management
 - Full CRUD for reports with SQL editor (query panel)
-- Run reports directly in the UI with live result preview
+- Run reports directly in the UI with live result preview, sortable columns, and pagination
 - Column-level formatting (number formats, date formats, null display)
 - Report options: hidden columns, total columns, locale, auto-refresh
 - Report tags for categorization
 - Enable/disable individual reports
-- Export report results (CSV, JSON, XML, PDF, XLSX)
+- Export report results (CSV, JSON, XML, PDF, XLSX) from the runner toolbar
 - Multiple SQL statements per report
-- Drill-down links — click summary rows to open detail reports
+- Drill-down links — click summary cells to open detail reports with mapped parameters
+- Drill-down UX — child report auto-runs when params are valid; Back restores the parent report
 - Dynamic SQL generation via Groovy scripting and conditional XML tags
 - Field expressions — inject `{username}`, `{date}`, `{time}` into queries
 - Report Rules (row-level security) — automatically filter data per user
@@ -67,6 +85,7 @@ A modern Reporting & Business Intelligence platform — React + TypeScript front
 - User-selectable parameters: text, number, date, dropdown, checkbox, radio, file upload, textarea
 - Chained (cascading) parameters — dependent dropdowns
 - Multi-value parameters (`IN` clause support)
+- URL / drill-down overrides merged with report defaults (required params validated before run)
 - Direct substitution parameters (string interpolation in SQL)
 - Fixed (pre-set) parameter values per report
 - Dynamic List-of-Values (LOV) from SQL queries
@@ -82,18 +101,19 @@ A modern Reporting & Business Intelligence platform — React + TypeScript front
 - Dynamic recipients — email list from SQL query
 - Per-recipient personalized/filtered report output (burst mode)
 - Job error notification emails
-- Job execution archives — browse historical outputs
+- Job execution archives — browse historical outputs with richer history UI
 
 ### 7. Dashboards
 - Column-based dashboard layout with report portlets
 - Gridstack dashboards — drag-and-drop, resizable grid
 - Tabbed dashboards — multiple tabs with different report sets
 - Live stats on the main dashboard page (report count, datasource count, job count, user count)
-- Recent activity feed
+- Recent activity feed and richer dashboard view chrome for day-to-day monitoring
 
 ### 8. Charts & Visualizations
 - Recharts-powered interactive charts rendered in-browser
 - Chart types: Bar, Stacked Bar, Line, Area, Pie, Donut, Scatter/XY, Time Series, Bubble, Heatmap, Speedometer/Gauge
+- Chart helpers for axis/series selection and empty-state handling in the report runner
 - External library support: C3.js, Plotly.js, Chart.js, ApexCharts, jqPlot, Dygraphs
 - Maps: Datamaps (choropleth), Leaflet, OpenLayers
 - Org Charts: from database, JSON, list, or Ajax source
@@ -160,12 +180,13 @@ A modern Reporting & Business Intelligence platform — React + TypeScript front
 | React | 18.3 | UI framework |
 | TypeScript | 5.5 | Type safety |
 | Vite | 5.4 | Build tool & dev server |
+| Vitest | — | Unit / component tests |
 | Tailwind CSS | 3.4 | Styling |
 | React Router | v6 | Client-side routing |
 | TanStack Query | v5 | Server state & caching |
 | TanStack Table | v8 | Data tables |
 | Zustand | 4.5 | Client state management |
-| React Hook Form + Zod | — | Form validation |
+| React Hook Form + Zod | — | Form validation & shared schemas |
 | Recharts | 2.12 | Charts |
 | i18next | 23 | Internationalization |
 | Axios | 1.7 | HTTP client |
@@ -194,10 +215,12 @@ A modern Reporting & Business Intelligence platform — React + TypeScript front
 insighthub/
 ├── frontend/               # React 18 + TypeScript + Vite + Tailwind
 │   ├── src/
-│   │   ├── features/       # Feature modules (auth, users, reports, …)
+│   │   ├── features/       # Feature modules (auth, users, report-engine, …)
+│   │   │   └── report-engine/  # Runner, builder, drill-down, exports, Vitest
 │   │   ├── pages/          # Page-level components
 │   │   ├── components/     # Shared UI components
-│   │   └── lib/            # API client, hooks, utilities
+│   │   ├── lib/            # API client, errors, formatters, query keys, utils
+│   │   └── routes/         # App routes (lazy-loaded feature pages)
 │   └── public/
 ├── backend/                # Spring Boot 3 + Java 17
 │   └── src/main/java/com/insighthub/
@@ -244,7 +267,7 @@ The fastest way to see InsightHub running end-to-end is with Docker. The demo st
 
 ```bash
 # Clone the repo (if you haven't already)
-git clone https://github.com/your-org/insighthub.git
+git clone https://github.com/ashutoshpurushottam/insighthub.git
 cd insighthub
 
 # Start the full demo stack (builds images on first run, ~2–3 minutes)
@@ -312,7 +335,10 @@ pnpm dev
 make install && make frontend
 ```
 
-Starts at `http://localhost:3000` — API calls are proxied to the backend automatically.
+Starts at Vite’s default URL (typically `http://localhost:5173` or `http://127.0.0.1:5173`).  
+Backend CORS allows both `localhost` and `127.0.0.1` on ports `3000` and `5173`, so either host works for local login.
+
+> Prefer opening the UI on the same host you allow in CORS (`localhost` vs `127.0.0.1`) to avoid browser CORS failures during development.
 
 ### Run with PostgreSQL (production-like)
 
@@ -363,7 +389,8 @@ make clean          # Clean build artifacts
 
 | Service | URL |
 |---|---|
-| Frontend | http://localhost:3000 |
+| Frontend (demo / Docker) | http://localhost:3000 |
+| Frontend (Vite local) | http://localhost:5173 |
 | Backend API | http://localhost:8080/insighthub/api |
 | Swagger UI | http://localhost:8080/insighthub/swagger-ui.html |
 | H2 Console (dev only) | http://localhost:8080/insighthub/h2-console |
@@ -400,10 +427,21 @@ Copy `frontend/.env.example` to `frontend/.env` and adjust as needed.
 
 1. Create a feature branch: `git checkout -b feat/my-feature`
 2. Develop backend + frontend together
-3. Run both servers and test end-to-end
-4. Commit with conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`
+3. Run both servers and test end-to-end (`make test-frontend`, `make test-backend`)
+4. Commit with conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`
 5. Push and open a PR into `dev`
-6. Releases are merged from `dev` → `main`
+6. Releases are merged from `dev` → `main`, then tagged on GitHub (for example `v1.1.0`)
+
+---
+
+## Releases
+
+| Version | Highlights |
+|---|---|
+| [v1.1.0](https://github.com/ashutoshpurushottam/insighthub/releases/tag/v1.1.0) | Report UI polish, drill-down Back/auto-run, shared TS helpers & tests, local CORS/auth fixes |
+| [v1.0.0](https://github.com/ashutoshpurushottam/insighthub/releases/tag/v1.0.0) | Initial full feature set |
+
+Full notes: [CHANGELOG.md](./CHANGELOG.md) · [All GitHub releases](https://github.com/ashutoshpurushottam/insighthub/releases)
 
 ---
 
