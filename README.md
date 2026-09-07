@@ -441,7 +441,7 @@ Copy `frontend/.env.example` to `frontend/.env` and adjust as needed.
 | [v1.1.0](https://github.com/ashutoshpurushottam/insighthub/releases/tag/v1.1.0) | Report UI polish, drill-down Back/auto-run, shared TS helpers & tests, local CORS/auth fixes |
 | [v1.0.0](https://github.com/ashutoshpurushottam/insighthub/releases/tag/v1.0.0) | Initial full feature set |
 
-All releases: https://github.com/ashutoshpurushottam/insighthub/releases
+Full notes: [CHANGELOG.md](./CHANGELOG.md) · [All GitHub releases](https://github.com/ashutoshpurushottam/insighthub/releases)
 
 ---
 
