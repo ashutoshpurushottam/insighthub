@@ -6,6 +6,8 @@ import {
   buildHeatmapCells,
   buildScatterPoints,
   chartColorAt,
+  CHART_COLORS,
+  CHART_TYPE_OPTIONS,
   detectXColumn,
   detectYColumns,
   isCartesianChart,
@@ -72,5 +74,12 @@ describe('chart-utils', () => {
     expect(summary[0].max).toBe(100);
     expect(summary[0].sum).toBe(150);
     expect(summary[0].avg).toBe(75);
+  });
+
+  it('exposes chart type options and color palette', () => {
+    expect(CHART_TYPE_OPTIONS.map((o) => o.value)).toContain('bar');
+    expect(CHART_TYPE_OPTIONS.map((o) => o.value)).toContain('heatmap');
+    expect(CHART_COLORS.length).toBeGreaterThanOrEqual(8);
+    expect(CHART_COLORS[0]).toMatch(/^#/);
   });
 });
