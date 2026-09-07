@@ -5,6 +5,7 @@ import {
   escapeCsvField,
   formatExportCellValue,
   getExportContentType,
+  getExportExtension,
   getExportFormatLabel,
   parseContentDispositionFilename,
   resolveExportFilename,
@@ -17,6 +18,14 @@ describe('export-utils', () => {
     expect(getExportContentType('csv')).toBe('text/csv');
     expect(getExportContentType('pdf')).toBe('application/pdf');
     expect(getExportFormatLabel('xlsx')).toContain('Excel');
+  });
+
+  it('returns file extensions for each export format', () => {
+    expect(getExportExtension('csv')).toBe('csv');
+    expect(getExportExtension('xlsx')).toBe('xlsx');
+    expect(getExportExtension('pdf')).toBe('pdf');
+    expect(getExportExtension('json')).toBe('json');
+    expect(getExportExtension('xml')).toBe('xml');
   });
 
   it('sanitizes filenames', () => {

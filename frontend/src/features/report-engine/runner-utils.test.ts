@@ -12,9 +12,13 @@ import {
   resolveParentReportPath,
   searchParamsToParamValues,
   shouldAutoRunFromSearch,
+  stripDrillDownMetaParams,
   summarizeParamValues,
   urlSearchToOverrides,
   validateParamValues,
+  DRILL_DOWN_FROM_PARAM,
+  DRILL_DOWN_FROM_PAGE_PARAM,
+  DRILL_DOWN_RETURN_PARAM,
   type RunnerParameter,
 } from './runner-utils';
 
@@ -128,5 +132,23 @@ describe('runner-utils', () => {
     expect(
       canAutoRunReport(parameters, { region: '', tags: [], secret: 'x' }),
     ).toBe(false);
+  });
+
+  it('exposes reserved drill-down query keys', () => {
+    expect(DRILL_DOWN_FROM_PARAM).toBe('_ihFrom');
+    expect(DRILL_DOWN_FROM_PAGE_PARAM).toBe('_ihFromPage');
+    expect(DRILL_DOWN_RETURN_PARAM).toBe('_ihReturn');
+  });
+
+  it('strips reserved drill-down meta params', () => {
+    expect(
+      stripDrillDownMetaParams({
+        region: 'West',
+        [DRILL_DOWN_FROM_PARAM]: '12',
+        [DRILL_DOWN_FROM_PAGE_PARAM]: '3',
+        [DRILL_DOWN_RETURN_PARAM]: '1',
+        page: '2',
+      }),
+    ).toEqual({ region: 'West' });
   });
 });
