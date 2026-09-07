@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildDashboardGridTemplate,
   clampColSpan,
+  dashboardItemSchema,
   dashboardSchema,
   reindexDashboardItems,
   sortDashboardItems,
@@ -16,6 +17,20 @@ describe('dashboards schemas', () => {
       items: [{ reportId: 1, title: 'A', position: 0 }],
     });
     expect(result.success).toBe(true);
+  });
+
+  it('rejects invalid dashboard items', () => {
+    expect(
+      dashboardItemSchema.safeParse({ reportId: 0, position: 0 }).success,
+    ).toBe(false);
+    expect(
+      dashboardItemSchema.safeParse({ reportId: 1, position: 0, colSpan: 13 })
+        .success,
+    ).toBe(false);
+    expect(
+      dashboardItemSchema.safeParse({ reportId: 1, position: 0, colSpan: 2 })
+        .success,
+    ).toBe(true);
   });
 
   it('builds grid templates and clamps spans', () => {
