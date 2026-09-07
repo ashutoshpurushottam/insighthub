@@ -1,2 +1,2 @@
 export { RolesPage } from './RolesPage';
-export { RoleFormModal } from './RoleFormModal';
+export { fetchRoles } from './api';

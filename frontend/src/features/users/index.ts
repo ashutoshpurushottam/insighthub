@@ -1,2 +1,2 @@
 export { UsersPage } from './UsersPage';
-export * from './api';
+export { fetchUsers } from './api';

@@ -3,23 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { z } from 'zod';
 
 import { createSmtpServer, updateSmtpServer, type SmtpServer } from './api';
+import { smtpServerSchema, type SmtpServerFormData } from './schemas';
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  server: z.string().min(1, 'Server host is required').max(200),
-  port: z.coerce.number().min(1, 'Port is required').max(65535),
-  useStarttls: z.boolean(),
-  useAuth: z.boolean(),
-  username: z.string().max(200).optional(),
-  password: z.string().max(500).optional(),
-  fromAddress: z.string().max(200).optional(),
-  active: z.boolean(),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = SmtpServerFormData;
 
 interface Props {
   smtpServer?: SmtpServer | null;
@@ -36,7 +24,7 @@ export function SmtpServerFormModal({ smtpServer, onClose }: Props) {
     watch,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(smtpServerSchema),
     defaultValues: isEdit
       ? {
           name: smtpServer.name,

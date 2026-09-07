@@ -140,9 +140,13 @@ export function RunReportModal({ report, onClose }: Props) {
                       className="rounded border border-gray-300 px-2 py-1 text-xs"
                     >
                       <option value="bar">Bar</option>
+                      <option value="stacked-bar">Stacked Bar</option>
                       <option value="line">Line</option>
                       <option value="area">Area</option>
                       <option value="pie">Pie</option>
+                      <option value="donut">Donut</option>
+                      <option value="scatter">Scatter</option>
+                      <option value="heatmap">Heatmap</option>
                     </select>
                   )}
                 </div>
