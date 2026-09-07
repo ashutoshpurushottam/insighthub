@@ -16,6 +16,10 @@ interface ResultsTableProps {
   rows: Record<string, unknown>[];
   /** Optional drill-down links for clickable columns */
   drillDownLinks?: DrillDownInfo[];
+  /** Parent report id — encoded into child drill-down URLs for Back */
+  parentReportId?: number;
+  /** Parent page — restored when navigating Back from a child report */
+  parentPage?: number;
   sortColumn?: string;
   sortDirection?: SortDirection;
   onSortChange?: (column: string, direction?: SortDirection) => void;
@@ -30,6 +34,8 @@ export function ResultsTable({
   columns,
   rows,
   drillDownLinks = [],
+  parentReportId,
+  parentPage,
 }: ResultsTableProps) {
   const [sortColumn, setSortColumn] = useState<string | undefined>();
   const [sortDirection, setSortDirection] = useState<SortDirection | undefined>();
@@ -118,7 +124,9 @@ export function ResultsTable({
                           value={row[col]}
                           drillDown={drillDown}
                           row={row}
-                          paramMappings={[{ parentColumnName: col, childParamName: col }]}
+                          paramMappings={drillDown.paramMappings}
+                          parentReportId={parentReportId}
+                          parentPage={parentPage}
                         />
                       ) : (
                         formatCellValue(row[col])
