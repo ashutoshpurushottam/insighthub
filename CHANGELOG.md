@@ -5,6 +5,25 @@ All notable changes to InsightHub are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Frontend Vitest coverage for auth store, `apiClient` interceptors, report-engine hooks, and expanded helper/schema tests (#10)
+- README Testing section and clearer docs for path aliases, drill-down config keys, and current chart support
+
+### Changed
+
+- TypeScript `tsconfig` path alias no longer uses deprecated `baseUrl`; `@/*` maps to `./src/*` (#9)
+- README feature list aligned with the current React UI (charts / self-service wording)
+
+### Documentation
+
+- [#6](https://github.com/ashutoshpurushottam/insighthub/pull/6) — Document v1.1.0 enhancements in README
+- [#7](https://github.com/ashutoshpurushottam/insighthub/pull/7) — Add CHANGELOG for v1.1.0
+- [#9](https://github.com/ashutoshpurushottam/insighthub/pull/9) — Fix deprecated TypeScript baseUrl
+- [#10](https://github.com/ashutoshpurushottam/insighthub/pull/10) — Add frontend unit tests for coverage gaps
+
 ## [1.1.0] - 2026-09-07
 
 [GitHub release](https://github.com/ashutoshpurushottam/insighthub/releases/tag/v1.1.0)
@@ -45,5 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial full feature set: reports, parameters, datasources, dashboards, jobs/scheduling, RBAC, guardrails, exports, and REST API
 
+[Unreleased]: https://github.com/ashutoshpurushottam/insighthub/compare/v1.1.0...HEAD
 [1.1.0]: https://github.com/ashutoshpurushottam/insighthub/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/ashutoshpurushottam/insighthub/releases/tag/v1.0.0
