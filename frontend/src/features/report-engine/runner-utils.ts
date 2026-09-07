@@ -123,12 +123,18 @@ export function searchParamsToParamValues(
 
 /**
  * Merge URL overrides on top of defaults.
+ * Null/undefined overrides are ignored so missing URL keys do not wipe defaults.
  */
 export function mergeParamValues(
   defaults: ParamValues,
   overrides: ParamValues,
 ): ParamValues {
-  return { ...defaults, ...overrides };
+  const merged: ParamValues = { ...defaults };
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === null || value === undefined) continue;
+    merged[key] = value;
+  }
+  return merged;
 }
 
 /**
@@ -170,4 +176,157 @@ export function summarizeParamValues(
   }
   if (parts.length === 0) return 'No filters';
   return parts.join(' · ');
+}
+
+/** Reserved query keys used for drill-down parent navigation context */
+export const DRILL_DOWN_FROM_PARAM = '_ihFrom';
+export const DRILL_DOWN_FROM_PAGE_PARAM = '_ihFromPage';
+export const DRILL_DOWN_RETURN_PARAM = '_ihReturn';
+
+const RESERVED_QUERY_KEYS = new Set([
+  DRILL_DOWN_FROM_PARAM,
+  DRILL_DOWN_FROM_PAGE_PARAM,
+  DRILL_DOWN_RETURN_PARAM,
+  'page',
+]);
+
+export interface DrillDownPathOptions {
+  childReportId: number;
+  triggerColumn: string;
+  triggerValue: unknown;
+  row: Record<string, unknown>;
+  paramMappings?: Array<{ parentColumnName: string; childParamName: string }>;
+  parentReportId?: number;
+  parentPage?: number;
+}
+
+/**
+ * Build the child report runner path with mapped params and parent context.
+ */
+export function buildDrillDownPath(options: DrillDownPathOptions): string {
+  const {
+    childReportId,
+    triggerColumn,
+    triggerValue,
+    row,
+    paramMappings = [],
+    parentReportId,
+    parentPage,
+  } = options;
+
+  const searchParams = new URLSearchParams();
+
+  for (const mapping of paramMappings) {
+    const paramValue = row[mapping.parentColumnName];
+    if (paramValue !== null && paramValue !== undefined) {
+      searchParams.set(mapping.childParamName, String(paramValue));
+    }
+  }
+
+  // Fallback when no explicit mappings are configured
+  if (paramMappings.length === 0 && triggerValue !== null && triggerValue !== undefined) {
+    searchParams.set(triggerColumn, String(triggerValue));
+  }
+
+  if (parentReportId != null && !Number.isNaN(parentReportId)) {
+    searchParams.set(DRILL_DOWN_FROM_PARAM, String(parentReportId));
+  }
+  if (parentPage != null && parentPage > 0) {
+    searchParams.set(DRILL_DOWN_FROM_PAGE_PARAM, String(parentPage));
+  }
+
+  const queryString = searchParams.toString();
+  return `/reports/${childReportId}/run${queryString ? `?${queryString}` : ''}`;
+}
+
+/**
+ * True when the URL indicates navigation from a parent report (drill-down).
+ * Reserved keys alone (page / return flags) do not count.
+ */
+export function isDrillDownNavigation(search: URLSearchParams | string): boolean {
+  const sp = typeof search === 'string' ? new URLSearchParams(search) : search;
+  if (sp.has(DRILL_DOWN_FROM_PARAM)) return true;
+  // Back-compat: any non-reserved query param counts as drill-down context
+  for (const key of sp.keys()) {
+    if (!RESERVED_QUERY_KEYS.has(key)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * True when the runner should auto-execute on load (drill-down or return from child).
+ */
+export function shouldAutoRunFromSearch(search: URLSearchParams | string): boolean {
+  const sp = typeof search === 'string' ? new URLSearchParams(search) : search;
+  if (sp.get(DRILL_DOWN_RETURN_PARAM) === '1') return true;
+  return isDrillDownNavigation(sp);
+}
+
+/**
+ * Resolve the parent report path for the Back control.
+ */
+export function resolveParentReportPath(search: URLSearchParams | string): string | null {
+  const sp = typeof search === 'string' ? new URLSearchParams(search) : search;
+  const fromId = sp.get(DRILL_DOWN_FROM_PARAM);
+  if (!fromId) return null;
+
+  const parentParams = new URLSearchParams();
+  parentParams.set(DRILL_DOWN_RETURN_PARAM, '1');
+  const fromPage = sp.get(DRILL_DOWN_FROM_PAGE_PARAM);
+  if (fromPage) {
+    parentParams.set('page', fromPage);
+  }
+  const qs = parentParams.toString();
+  return `/reports/${fromId}/run${qs ? `?${qs}` : ''}`;
+}
+
+/**
+ * Strip reserved drill-down navigation keys from param values.
+ */
+export function stripDrillDownMetaParams(values: ParamValues): ParamValues {
+  const out: ParamValues = { ...values };
+  delete out[DRILL_DOWN_FROM_PARAM];
+  delete out[DRILL_DOWN_FROM_PAGE_PARAM];
+  delete out[DRILL_DOWN_RETURN_PARAM];
+  delete out.page;
+  return out;
+}
+
+/**
+ * Parse URL params into overrides for known report parameters only.
+ * Keys absent from the URL are omitted (so defaults are preserved on merge).
+ * Reserved drill-down meta keys are never treated as report params.
+ */
+export function urlSearchToOverrides(
+  search: URLSearchParams | string,
+  parameters: RunnerParameter[],
+): ParamValues {
+  const sp = typeof search === 'string' ? new URLSearchParams(search) : search;
+  const values: ParamValues = {};
+
+  for (const param of parameters) {
+    if (RESERVED_QUERY_KEYS.has(param.name)) {
+      continue;
+    }
+    if (!sp.has(param.name)) continue;
+    if (param.multiValue) {
+      values[param.name] = sp.getAll(param.name);
+    } else {
+      values[param.name] = sp.get(param.name);
+    }
+  }
+
+  return values;
+}
+
+/**
+ * Whether required params are satisfied enough to auto-run.
+ */
+export function canAutoRunReport(
+  parameters: RunnerParameter[],
+  values: ParamValues,
+): boolean {
+  return validateParamValues(parameters, values).length === 0;
 }
