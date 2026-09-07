@@ -19,6 +19,7 @@ A modern Reporting & Business Intelligence platform — React + TypeScript front
 - [Project Structure](#project-structure)
 - [Running the Demo](#running-the-demo)
 - [Local Development](#local-development)
+- [Testing](#testing)
 - [Default Credentials](#default-credentials)
 - [Key URLs](#key-urls)
 - [Environment Variables](#environment-variables)
@@ -30,14 +31,19 @@ A modern Reporting & Business Intelligence platform — React + TypeScript front
 
 ## What's New
 
+### Unreleased (on `dev`)
+
+- Broader frontend Vitest coverage: auth store, `apiClient` interceptors, report-engine hooks, and expanded helper/schema tests (#10)
+- TypeScript path alias migration: removed deprecated `baseUrl`; `@/*` maps to `./src/*` (#9)
+
 ### v1.1.0
 
 - **Report runner UX** — richer results table (client-side sort), export toolbar, pagination, and clearer chart/job-history/dashboard views
 - **Drill-down navigation** — execute API returns column→parameter mappings; child reports auto-run when required params are present; **Back** returns to the parent report path (and re-runs) instead of fragile browser history
-- **Frontend hardening** — shared Zod schemas and helpers (`api-errors`, `formatters`, `query-keys`, `list-utils`, `runner-utils`), Vitest coverage for report-engine components, Vite bootstrap for local UI work
+- **Frontend hardening** — shared Zod schemas and helpers (`api-errors`, `formatters`, `query-keys`, `list-utils`, `runner-utils`, `export-utils`, `table-utils`), Vitest coverage across `lib/` and report-engine, Vite bootstrap for local UI work
 - **Local auth/CORS** — backend auth stack restored for local login; CORS allows `localhost` / `127.0.0.1` on ports `3000` and `5173`
 
-See the full [v1.1.0 release notes](https://github.com/ashutoshpurushottam/insighthub/releases/tag/v1.1.0).
+See [CHANGELOG.md](./CHANGELOG.md) for the full Keep a Changelog entry and the [v1.1.0 GitHub release](https://github.com/ashutoshpurushottam/insighthub/releases/tag/v1.1.0).
 
 ---
 
@@ -77,6 +83,7 @@ See the full [v1.1.0 release notes](https://github.com/ashutoshpurushottam/insig
 - Multiple SQL statements per report
 - Drill-down links — click summary cells to open detail reports with mapped parameters
 - Drill-down UX — child report auto-runs when params are valid; Back restores the parent report
+- Configure mappings in the report builder (parent column → child parameter); runner URLs may include `_ihFrom` / `_ihFromPage` for Back, and `_ihReturn` when returning to the parent
 - Dynamic SQL generation via Groovy scripting and conditional XML tags
 - Field expressions — inject `{username}`, `{date}`, `{time}` into queries
 - Report Rules (row-level security) — automatically filter data per user
@@ -105,24 +112,19 @@ See the full [v1.1.0 release notes](https://github.com/ashutoshpurushottam/insig
 
 ### 7. Dashboards
 - Column-based dashboard layout with report portlets
-- Gridstack dashboards — drag-and-drop, resizable grid
-- Tabbed dashboards — multiple tabs with different report sets
+- Configurable column count and per-item column span in the React UI
 - Live stats on the main dashboard page (report count, datasource count, job count, user count)
 - Recent activity feed and richer dashboard view chrome for day-to-day monitoring
 
 ### 8. Charts & Visualizations
-- Recharts-powered interactive charts rendered in-browser
-- Chart types: Bar, Stacked Bar, Line, Area, Pie, Donut, Scatter/XY, Time Series, Bubble, Heatmap, Speedometer/Gauge
+- Recharts-powered interactive charts in the React report UI
+- Chart types currently supported in the frontend helpers: Bar, Stacked Bar, Line, Area, Pie, Donut, Scatter, Heatmap
 - Chart helpers for axis/series selection and empty-state handling in the report runner
-- External library support: C3.js, Plotly.js, Chart.js, ApexCharts, jqPlot, Dygraphs
-- Maps: Datamaps (choropleth), Leaflet, OpenLayers
-- Org Charts: from database, JSON, list, or Ajax source
-- Self-service charts — users build custom visualizations ad-hoc
 
-### 9. Self-Service
-- Self-service reports — users build ad-hoc queries (select columns, define conditions) without SQL knowledge
-- Self-service dashboards — users compose and arrange their own personal dashboards
-- Self-service charts — users create custom chart views
+### 9. Self-Service (planned / partial)
+- Dashboards let users compose report layouts from existing reports
+- Ad-hoc SQL editing is available in the report SQL editor for authors
+- Broader “no-SQL” self-service report/chart builders are not fully exposed in the current React UI
 
 ### 10. SMTP / Email
 - Multiple SMTP server configurations
@@ -181,6 +183,7 @@ See the full [v1.1.0 release notes](https://github.com/ashutoshpurushottam/insig
 | TypeScript | 5.5 | Type safety |
 | Vite | 5.4 | Build tool & dev server |
 | Vitest | — | Unit / component tests |
+| Testing Library | — | Component test utilities |
 | Tailwind CSS | 3.4 | Styling |
 | React Router | v6 | Client-side routing |
 | TanStack Query | v5 | Server state & caching |
@@ -215,12 +218,13 @@ See the full [v1.1.0 release notes](https://github.com/ashutoshpurushottam/insig
 insighthub/
 ├── frontend/               # React 18 + TypeScript + Vite + Tailwind
 │   ├── src/
-│   │   ├── features/       # Feature modules (auth, users, report-engine, …)
-│   │   │   └── report-engine/  # Runner, builder, drill-down, exports, Vitest
+│   │   ├── features/       # Feature modules (auth, users, report-engine, jobs, …)
+│   │   │   └── report-engine/  # Runner, builder, drill-down, exports, hooks + tests
 │   │   ├── pages/          # Page-level components
 │   │   ├── components/     # Shared UI components
-│   │   ├── lib/            # API client, errors, formatters, query keys, utils
+│   │   ├── lib/            # API client, errors, formatters, query keys, utils (+ *.test.ts)
 │   │   └── routes/         # App routes (lazy-loaded feature pages)
+│   ├── tsconfig.json       # `@/*` → `./src/*` path alias (no deprecated baseUrl)
 │   └── public/
 ├── backend/                # Spring Boot 3 + Java 17
 │   └── src/main/java/com/insighthub/
@@ -248,6 +252,7 @@ insighthub/
 ├── k8s/                    # Kubernetes manifests
 ├── demo/                   # Demo seed data & Dockerfiles
 ├── Makefile                # Dev convenience commands
+├── CHANGELOG.md            # Keep a Changelog release notes
 └── README.md
 ```
 
@@ -338,6 +343,8 @@ make install && make frontend
 Starts at Vite’s default URL (typically `http://localhost:5173` or `http://127.0.0.1:5173`).  
 Backend CORS allows both `localhost` and `127.0.0.1` on ports `3000` and `5173`, so either host works for local login.
 
+Imports use the `@/` path alias (configured in `frontend/tsconfig.json` and Vite), for example `@/lib/api-client`.
+
 > Prefer opening the UI on the same host you allow in CORS (`localhost` vs `127.0.0.1`) to avoid browser CORS failures during development.
 
 ### Run with PostgreSQL (production-like)
@@ -371,6 +378,36 @@ make test-frontend  # Run frontend tests
 make lint           # Lint frontend code
 make clean          # Clean build artifacts
 ```
+
+---
+
+## Testing
+
+### Frontend (Vitest)
+
+```bash
+cd frontend
+pnpm test              # run once
+pnpm test:watch        # watch mode
+# or from repo root:
+make test-frontend
+```
+
+Coverage focus areas:
+- Shared helpers in `frontend/src/lib/` (`api-errors`, `formatters`, `list-utils`, `query-keys`, `utils`, `apiClient` interceptors)
+- Feature schemas and utils (reports, jobs, dashboards, datasources, …)
+- Report-engine components, runner/export/table helpers, and hooks (`useExport`, `useParameterLov`, `useReportExecution`)
+- Auth store (`setAuth` / `logout`)
+
+### Backend (JUnit / Maven)
+
+```bash
+make test-backend
+# or:
+cd backend && mvn test
+```
+
+Job handlers and several execution/SQL helpers are covered; interactive report orchestration, exports, and drill-down services still have thinner automated coverage.
 
 ---
 
