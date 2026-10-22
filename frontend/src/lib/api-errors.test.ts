@@ -17,6 +17,11 @@ describe('api-errors', () => {
         response: { data: { message: 'from server' }, status: 400 },
       }),
     ).toBe('from server');
+    expect(
+      getErrorMessage({
+        response: { data: '  plain body  ', status: 500 },
+      }),
+    ).toBe('  plain body  ');
     expect(getErrorMessage(null, 'fallback')).toBe('fallback');
   });
 

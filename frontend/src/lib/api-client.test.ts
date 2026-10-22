@@ -1,3 +1,4 @@
+import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { User } from '@/types';

@@ -21,13 +21,16 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
     return error.message;
   }
 
-  const axiosError = error as AxiosError<{ message?: string; error?: string; detail?: string }>;
+  const axiosError = error as AxiosError<unknown>;
   const data = axiosError?.response?.data;
-  if (data) {
-    if (typeof data === 'string' && data.trim()) return data;
-    if (data.message) return data.message;
-    if (data.error) return data.error;
-    if (data.detail) return data.detail;
+  if (typeof data === 'string' && data.trim()) {
+    return data;
+  }
+  if (data && typeof data === 'object') {
+    const body = data as { message?: string; error?: string; detail?: string };
+    if (body.message) return body.message;
+    if (body.error) return body.error;
+    if (body.detail) return body.detail;
   }
 
   if (axiosError?.message) {
