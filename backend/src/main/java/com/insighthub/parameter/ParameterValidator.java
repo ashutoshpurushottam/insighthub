@@ -95,7 +95,13 @@ public class ParameterValidator {
 
     private void validateNumber(String paramName, String value, List<ValidationError> errors) {
         try {
-            Double.parseDouble(value);
+            double parsed = Double.parseDouble(value);
+            if(!Double.isFinite(parsed)) {
+                errors.add(new ValidationError(
+                        "Parameter '" + paramName + "' must be a finite number",
+                        paramName
+                ));
+            }
         } catch (NumberFormatException e) {
             errors.add(new ValidationError(
                     "Parameter '" + paramName + "' must be a valid number",
